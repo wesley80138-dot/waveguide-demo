@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AR Waveguide Lab — Interactive 3D Visualization Suite</title>
-<meta name="description" content="AR 光波導擴瞳互動式視覺化套件：光線追跡、k-space 動量空間分析、光柵效率與 Eyebox 均勻度模擬。">
+<title>AR Waveguide Lab — Modern Nanophotonics Lab, NTUT</title>
+<meta name="description" content="National Taipei University of Technology · Department of Electro-Optical Engineering · Modern Nanophotonics Lab — AR Waveguide Pupil Expansion Visualization Suite.">
 <style>
 :root{
   --bg-0:#05070d;
@@ -44,6 +44,25 @@ a:hover{opacity:0.75;}
   -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
 }
 
+/* === Top affiliation bar === */
+.affil-bar{
+  position:relative;z-index:51;
+  background:rgba(0,0,0,0.4);
+  border-bottom:1px solid var(--line);
+  padding:8px 32px;
+  font-size:11.5px;
+  color:var(--text-dim);
+  letter-spacing:0.4px;
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  flex-wrap:wrap;
+}
+.affil-bar .dot-sep{color:var(--text-faint);opacity:0.5;}
+.affil-bar .lab-name{color:#fff;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;font-size:11px;}
+.affil-bar .ntut-mark{
+  font-weight:500;color:var(--text-dim);letter-spacing:0.4px;
+}
+
+/* === Navbar === */
 nav{
   position:sticky;top:0;z-index:50;
   background:rgba(5,7,13,0.7);
@@ -55,16 +74,22 @@ nav{
   padding:14px 32px;
   display:flex;align-items:center;justify-content:space-between;
 }
-.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;letter-spacing:0.3px;}
-.brand .logo{
-  width:24px;height:24px;border-radius:6px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  position:relative;flex-shrink:0;
-  box-shadow:0 0 12px rgba(94,224,255,0.4);
+.brand{display:flex;align-items:center;gap:14px;}
+.brand .wordmark{
+  display:flex;flex-direction:column;line-height:1.15;
+  padding-right:14px;border-right:1px solid var(--line-2);
 }
-.brand .logo::after{
-  content:"";position:absolute;inset:5px;border-radius:3px;background:var(--bg-0);
+.brand .wordmark .mn{
+  font-weight:700;font-size:13px;color:#fff;
+  letter-spacing:2.5px;text-transform:uppercase;
 }
+.brand .wordmark .lab{
+  font-weight:500;font-size:9.5px;color:var(--text-faint);
+  letter-spacing:3px;text-transform:uppercase;margin-top:3px;
+}
+.brand .name{display:flex;flex-direction:column;line-height:1.2;}
+.brand .name .top{font-weight:600;font-size:13px;letter-spacing:0.3px;color:var(--text);}
+.brand .name .bottom{font-size:10.5px;color:var(--text-faint);letter-spacing:0.4px;margin-top:2px;}
 .nav-links{display:flex;gap:28px;font-size:13px;color:var(--text-dim);}
 .nav-links a{color:var(--text-dim);}
 .nav-links a:hover{color:var(--text);opacity:1;}
@@ -101,8 +126,13 @@ h1.hero-title .grad{
 .hero-sub{
   font-size:clamp(15px, 1.6vw, 18px);
   color:var(--text-dim);
-  max-width:720px;margin:0 auto 34px;
+  max-width:720px;margin:0 auto 16px;
 }
+.hero-affil{
+  font-size:13px;color:var(--text-faint);
+  margin-bottom:34px;letter-spacing:0.3px;
+}
+.hero-affil .pipe{margin:0 8px;opacity:0.4;}
 .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
 .btn{
   display:inline-flex;align-items:center;gap:8px;
@@ -157,7 +187,9 @@ section.block{
   border:1px solid var(--line-2);
   border-radius:16px;overflow:hidden;
   position:relative;
+  text-decoration:none;color:inherit;
 }
+.featured:hover{opacity:1;}
 .featured::before{
   content:"";position:absolute;inset:-1px;border-radius:16px;
   background:linear-gradient(135deg,rgba(94,224,255,0.4),transparent 40%,rgba(160,112,255,0.3));
@@ -172,7 +204,7 @@ section.block{
   color:var(--accent-3);font-size:11px;letter-spacing:1px;font-weight:600;
   margin-bottom:14px;
 }
-.featured-info h3{font-size:24px;font-weight:600;margin-bottom:10px;letter-spacing:-0.3px;}
+.featured-info h3{font-size:24px;font-weight:600;margin-bottom:10px;letter-spacing:-0.3px;color:var(--text);}
 .featured-info p{color:var(--text-dim);font-size:14px;margin-bottom:22px;}
 .featured-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px;}
 .chip{
@@ -238,7 +270,7 @@ section.block{
 .mod-cat.full{background:rgba(255,174,94,0.12);color:var(--accent-3);border:1px solid rgba(255,174,94,0.3);}
 
 .mod-body{padding:18px 20px 20px;flex:1;display:flex;flex-direction:column;}
-.mod-body h4{font-size:15.5px;font-weight:600;margin-bottom:6px;line-height:1.35;}
+.mod-body h4{font-size:15.5px;font-weight:600;margin-bottom:6px;line-height:1.35;color:var(--text);}
 .mod-body p{font-size:12.5px;color:var(--text-dim);line-height:1.6;flex:1;}
 .mod-meta{
   display:flex;align-items:center;justify-content:space-between;
@@ -252,21 +284,79 @@ section.block{
 footer{
   position:relative;z-index:1;
   border-top:1px solid var(--line);
-  margin-top:50px;padding:40px 32px;
-  text-align:center;color:var(--text-faint);font-size:12.5px;
+  margin-top:50px;padding:48px 32px 32px;
+  text-align:center;
 }
-footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.7;}
+.foot-grid{
+  max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:36px;
+  text-align:left;
+  padding-bottom:24px;border-bottom:1px solid var(--line);
+  margin-bottom:24px;
+}
+@media(max-width:880px){.foot-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.foot-grid{grid-template-columns:1fr;}}
+.foot-col .contact-row{
+  font-size:12px;color:var(--text-dim);margin-bottom:6px;
+  display:flex;align-items:flex-start;gap:8px;line-height:1.5;
+}
+.foot-col .contact-row svg{
+  width:13px;height:13px;flex-shrink:0;margin-top:2px;color:var(--text-faint);
+}
+.foot-col .contact-row a{color:var(--text-dim);}
+.foot-col .contact-row a:hover{color:var(--accent);}
+.foot-col .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.foot-col .links a{
+  font-size:11.5px;
+  padding:5px 10px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--line-2);border-radius:5px;
+  color:var(--text-dim);transition:all .2s;
+}
+.foot-col .links a:hover{border-color:var(--accent);color:var(--accent);background:rgba(94,224,255,0.06);opacity:1;}
+.foot-col h5{
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--accent);font-weight:600;margin-bottom:12px;
+}
+.foot-col .lab-line{
+  font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+.foot-col .lab-en{
+  font-size:13px;color:var(--text-dim);margin-bottom:6px;letter-spacing:0.5px;
+}
+.foot-col .lab-uni{
+  font-size:12.5px;color:var(--text-faint);
+}
+.foot-bottom{
+  font-size:12px;color:var(--text-faint);
+}
+.foot-bottom .built{margin-top:6px;font-size:11px;opacity:0.7;}
 </style>
 </head>
 <body>
 
 <div class="grid-bg"></div>
 
+<div class="affil-bar">
+  <span class="lab-name">Modern Nanophotonics Lab</span>
+  <span class="dot-sep">·</span>
+  <span>Prof. Yu-Chieh Cheng</span>
+  <span class="dot-sep">·</span>
+  <span class="ntut-mark">National Taipei University of Technology</span>
+</div>
+
 <nav>
   <div class="nav-inner">
     <div class="brand">
-      <div class="logo"></div>
-      <span>Waveguide Lab</span>
+      <div class="wordmark">
+        <div class="mn">Modern Nanophotonics</div>
+        <div class="lab">Lab · NTUT</div>
+      </div>
+      <div class="name">
+        <div class="top">AR Waveguide Suite</div>
+        <div class="bottom">Interactive Visualization</div>
+      </div>
     </div>
     <div class="nav-links">
       <a href="#featured">Simulator</a>
@@ -283,7 +373,14 @@ footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.
     <span class="grad">Interactive Lab</span>
   </h1>
   <p class="hero-sub">
-    從光線追跡到 k-space 動量空間 — 一系列互動式 3D 模擬，視覺化 AR 光波導中 In-coupling、Pupil Expansion、Out-coupling 的物理機制。
+    從光線追跡到 k-space 動量空間 — 一系列互動式 3D 模擬，視覺化 AR 光波導中 In-coupling、Pupil Expansion、Out-coupling 的物理機制。屬於本實驗室「Augmented reality near-eye display」研究主題的教學/可視化工具。
+  </p>
+  <p class="hero-affil">
+    Modern Nanophotonics Lab
+    <span class="pipe">|</span>
+    Prof. Yu-Chieh Cheng
+    <span class="pipe">|</span>
+    NTUT
   </p>
   <div class="hero-cta">
     <a href="#featured" class="btn btn-primary">
@@ -327,7 +424,6 @@ footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.
       </div>
     </div>
     <div class="featured-preview">
-      <!-- abstract waveguide illustration -->
       <svg viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="wgGrad" x1="0" y1="0" x2="1" y2="1">
@@ -339,20 +435,15 @@ footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.
             <stop offset="100%" stop-color="#5ee0ff"/>
           </linearGradient>
         </defs>
-        <!-- waveguide slab -->
         <rect x="40" y="70" width="260" height="100" rx="4" fill="url(#wgGrad)" stroke="#5ee0ff" stroke-opacity="0.4"/>
-        <!-- gratings G1, G2, G3 -->
         <rect x="60" y="70" width="40" height="100" fill="#5ee0ff" fill-opacity="0.18" stroke="#5ee0ff" stroke-opacity="0.5"/>
         <rect x="130" y="70" width="100" height="100" fill="#a070ff" fill-opacity="0.14" stroke="#a070ff" stroke-opacity="0.5"/>
         <rect x="250" y="70" width="40" height="100" fill="#ffae5e" fill-opacity="0.18" stroke="#ffae5e" stroke-opacity="0.5"/>
-        <!-- TIR zigzag rays -->
         <polyline points="80,50 80,80 105,160 130,80 155,160 180,80 205,160 230,80 250,160" fill="none" stroke="url(#rayG)" stroke-width="1.4" stroke-opacity="0.85"/>
         <polyline points="80,50 80,90 110,160 140,90 170,160 200,90 230,160 260,90 270,200" fill="none" stroke="#5ee0ff" stroke-width="1" stroke-opacity="0.5"/>
-        <!-- output rays -->
         <line x1="265" y1="170" x2="270" y2="220" stroke="#ffae5e" stroke-width="1.2" opacity="0.7"/>
         <line x1="275" y1="170" x2="285" y2="220" stroke="#ffae5e" stroke-width="1.2" opacity="0.7"/>
         <line x1="255" y1="170" x2="245" y2="220" stroke="#ffae5e" stroke-width="1.2" opacity="0.7"/>
-        <!-- labels -->
         <text x="80" y="195" fill="#5ee0ff" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" opacity="0.9">G1</text>
         <text x="180" y="195" fill="#a070ff" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" opacity="0.9">G2 (EPE)</text>
         <text x="270" y="195" fill="#ffae5e" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" opacity="0.9">G3</text>
@@ -417,7 +508,6 @@ footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.
           <rect x="35" y="36" width="22" height="50" fill="#5ee0ff" fill-opacity="0.2"/>
           <rect x="80" y="36" width="80" height="50" fill="#a070ff" fill-opacity="0.18"/>
           <rect x="180" y="36" width="22" height="50" fill="#ffae5e" fill-opacity="0.2"/>
-          <!-- eyebox grid -->
           <g transform="translate(155,92)">
             <rect width="10" height="10" fill="#ffae5e" opacity="0.9"/>
             <rect x="11" width="10" height="10" fill="#ffae5e" opacity="0.6"/>
@@ -522,8 +612,42 @@ footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.
 </section>
 
 <footer>
-  <div>AR Waveguide Lab · Interactive 3D Visualization Suite</div>
-  <div class="built">6 modules · vanilla JavaScript · Hosted on GitHub Pages</div>
+  <div class="foot-grid">
+    <div class="foot-col">
+      <h5>Lab</h5>
+      <div class="lab-line">Modern Nanophotonics Lab</div>
+      <div class="lab-en">PI: Prof. Yu-Chieh Cheng</div>
+      <div class="lab-uni">National Taipei University of Technology</div>
+    </div>
+    <div class="foot-col">
+      <h5>Contact</h5>
+      <div class="contact-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <a href="mailto:yu-chieh.cheng@mail.ntut.edu.tw">yu-chieh.cheng@mail.ntut.edu.tw</a>
+      </div>
+      <div class="contact-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>+886-2-2771-2171 ext. 4630</span>
+      </div>
+      <div class="contact-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>No. 1, Sec. 3, Chung-Hsiao E. Rd., Taipei 10608, Taiwan</span>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h5>Links</h5>
+      <div class="links">
+        <a href="https://milu7751992.wixsite.com/modernphotonics" target="_blank" rel="noopener">Lab Website ↗</a>
+        <a href="https://milu7751992.wixsite.com/modernphotonics/about-prof-y-c-cheng" target="_blank" rel="noopener">About PI</a>
+        <a href="https://milu7751992.wixsite.com/modernphotonics/meet-the-team" target="_blank" rel="noopener">Team</a>
+        <a href="https://milu7751992.wixsite.com/modernphotonics/contact" target="_blank" rel="noopener">Contact</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    AR Waveguide Visualization Suite · A teaching toolkit by Modern Nanophotonics Lab
+    <div class="built">6 interactive modules · vanilla JavaScript · Hosted on GitHub Pages</div>
+  </div>
 </footer>
 
 </body>
