@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AR Waveguide Pupil Expansion — 3D Ray Tracing & Eyebox Visualization</title>
-<meta name="description" content="互動式 AR 光波導擴瞳模擬：3D 光線追跡、光柵效率分析、Eyebox 均勻度視覺化。">
+<title>AR Waveguide Lab — Interactive 3D Visualization Suite</title>
+<meta name="description" content="AR 光波導擴瞳互動式視覺化套件：光線追跡、k-space 動量空間分析、光柵效率與 Eyebox 均勻度模擬。">
 <style>
 :root{
   --bg-0:#05070d;
@@ -18,10 +18,10 @@
   --accent:#5ee0ff;
   --accent-2:#a070ff;
   --accent-3:#ffae5e;
-  --glow:0 0 24px rgba(94,224,255,0.18);
+  --accent-4:#5eff9b;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{background:var(--bg-0);color:var(--text);font-family:'Inter','Segoe UI','Helvetica Neue',-apple-system,BlinkMacSystemFont,Arial,'PingFang TC','Microsoft JhengHei',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6;}
+html,body{background:var(--bg-0);color:var(--text);font-family:'Inter','Segoe UI','Helvetica Neue',-apple-system,BlinkMacSystemFont,Arial,'PingFang TC','Microsoft JhengHei',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6;scroll-behavior:smooth;}
 body{
   min-height:100vh;
   background:
@@ -34,7 +34,6 @@ body{
 a{color:var(--accent);text-decoration:none;transition:opacity .2s;}
 a:hover{opacity:0.75;}
 
-/* === Grid background === */
 .grid-bg{
   position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;
   background-image:
@@ -45,7 +44,6 @@ a:hover{opacity:0.75;}
   -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
 }
 
-/* === Navbar === */
 nav{
   position:sticky;top:0;z-index:50;
   background:rgba(5,7,13,0.7);
@@ -68,7 +66,7 @@ nav{
   content:"";position:absolute;inset:5px;border-radius:3px;background:var(--bg-0);
 }
 .nav-links{display:flex;gap:28px;font-size:13px;color:var(--text-dim);}
-.nav-links a{color:var(--text-dim);transition:color .2s;}
+.nav-links a{color:var(--text-dim);}
 .nav-links a:hover{color:var(--text);opacity:1;}
 @media(max-width:720px){.nav-links{display:none;}}
 
@@ -76,7 +74,7 @@ nav{
 .hero{
   position:relative;z-index:1;
   max-width:1280px;margin:0 auto;
-  padding:90px 32px 60px;
+  padding:80px 32px 50px;
   text-align:center;
 }
 .tag{
@@ -86,15 +84,15 @@ nav{
   border:1px solid rgba(94,224,255,0.25);
   border-radius:999px;
   font-size:12px;color:var(--accent);letter-spacing:0.5px;
-  margin-bottom:28px;
+  margin-bottom:24px;
 }
 .tag .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
 h1.hero-title{
-  font-size:clamp(36px, 6vw, 64px);
+  font-size:clamp(36px, 6vw, 60px);
   font-weight:700;line-height:1.1;letter-spacing:-1px;
-  margin-bottom:24px;
+  margin-bottom:22px;
 }
 h1.hero-title .grad{
   background:linear-gradient(120deg,var(--accent) 0%,var(--accent-2) 50%,var(--accent-3) 100%);
@@ -103,7 +101,7 @@ h1.hero-title .grad{
 .hero-sub{
   font-size:clamp(15px, 1.6vw, 18px);
   color:var(--text-dim);
-  max-width:680px;margin:0 auto 40px;
+  max-width:720px;margin:0 auto 34px;
 }
 .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
 .btn{
@@ -125,16 +123,15 @@ h1.hero-title .grad{
 }
 .btn-ghost:hover{background:rgba(255,255,255,0.08);border-color:var(--accent);opacity:1;}
 
-/* === Stats strip === */
 .stats{
   display:grid;grid-template-columns:repeat(4,1fr);
   gap:1px;background:var(--line);
   border:1px solid var(--line);border-radius:12px;overflow:hidden;
-  max-width:880px;margin:60px auto 0;
+  max-width:880px;margin:50px auto 0;
 }
-.stat{padding:22px 16px;background:var(--bg-1);text-align:center;}
-.stat .num{font-size:24px;font-weight:600;color:var(--accent);font-family:'JetBrains Mono','Consolas',monospace;}
-.stat .label{font-size:11px;color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+.stat{padding:20px 14px;background:var(--bg-1);text-align:center;}
+.stat .num{font-size:22px;font-weight:600;color:var(--accent);font-family:'JetBrains Mono','Consolas',monospace;}
+.stat .label{font-size:10.5px;color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
 @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}}
 
 /* === Section === */
@@ -143,124 +140,119 @@ section.block{
   max-width:1280px;margin:0 auto;
   padding:60px 32px;
 }
-.section-head{text-align:center;margin-bottom:48px;}
+.section-head{margin-bottom:36px;}
+.section-head.center{text-align:center;}
 .section-eyebrow{
   font-size:11px;letter-spacing:2.5px;text-transform:uppercase;
   color:var(--accent);font-weight:600;margin-bottom:10px;
 }
-.section-title{font-size:clamp(26px,3.5vw,38px);font-weight:600;letter-spacing:-0.5px;}
-.section-desc{color:var(--text-dim);max-width:600px;margin:14px auto 0;font-size:15px;}
+.section-title{font-size:clamp(24px,3vw,34px);font-weight:600;letter-spacing:-0.5px;}
+.section-desc{color:var(--text-dim);max-width:720px;font-size:14.5px;margin-top:10px;}
+.section-head.center .section-desc{margin-left:auto;margin-right:auto;}
 
-/* === Feature cards === */
-.features{
+/* === Featured demo card === */
+.featured{
+  display:grid;grid-template-columns:1.1fr 1fr;gap:0;
+  background:linear-gradient(135deg, rgba(94,224,255,0.04), rgba(160,112,255,0.04));
+  border:1px solid var(--line-2);
+  border-radius:16px;overflow:hidden;
+  position:relative;
+}
+.featured::before{
+  content:"";position:absolute;inset:-1px;border-radius:16px;
+  background:linear-gradient(135deg,rgba(94,224,255,0.4),transparent 40%,rgba(160,112,255,0.3));
+  z-index:-1;filter:blur(24px);opacity:0.6;
+}
+@media(max-width:880px){.featured{grid-template-columns:1fr;}}
+.featured-info{padding:40px 36px;display:flex;flex-direction:column;justify-content:center;}
+.featured-badge{
+  display:inline-flex;width:fit-content;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:5px;
+  background:rgba(255,174,94,0.1);border:1px solid rgba(255,174,94,0.3);
+  color:var(--accent-3);font-size:11px;letter-spacing:1px;font-weight:600;
+  margin-bottom:14px;
+}
+.featured-info h3{font-size:24px;font-weight:600;margin-bottom:10px;letter-spacing:-0.3px;}
+.featured-info p{color:var(--text-dim);font-size:14px;margin-bottom:22px;}
+.featured-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px;}
+.chip{
+  font-size:11px;padding:3px 9px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--line-2);
+  border-radius:999px;color:var(--text-dim);
+}
+.featured-preview{
+  background:#0d1422;
+  position:relative;min-height:280px;
+  border-left:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+@media(max-width:880px){.featured-preview{border-left:none;border-top:1px solid var(--line);min-height:200px;}}
+.featured-preview svg{width:80%;height:auto;max-width:340px;opacity:0.95;}
+
+/* === Module gallery === */
+.modules{
   display:grid;grid-template-columns:repeat(3,1fr);gap:18px;
 }
-@media(max-width:880px){.features{grid-template-columns:1fr;}}
-.card{
+@media(max-width:980px){.modules{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.modules{grid-template-columns:1fr;}}
+
+.mod-card{
   background:linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.005));
   border:1px solid var(--line);
   border-radius:12px;
-  padding:28px 24px;
-  position:relative;overflow:hidden;
-  transition:border-color .25s, transform .25s;
+  overflow:hidden;
+  text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;
+  transition:border-color .25s, transform .25s, box-shadow .25s;
+  position:relative;
 }
-.card:hover{border-color:var(--line-2);transform:translateY(-2px);}
-.card::before{
+.mod-card:hover{
+  border-color:var(--line-2);
+  transform:translateY(-3px);
+  box-shadow:0 12px 32px rgba(0,0,0,0.4);
+  opacity:1;
+}
+.mod-card::before{
   content:"";position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,var(--accent),transparent);
-  opacity:0.6;
+  opacity:0;transition:opacity .3s;
 }
-.card .icon{
-  width:42px;height:42px;border-radius:10px;
-  background:rgba(94,224,255,0.08);
-  border:1px solid rgba(94,224,255,0.2);
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:18px;
-  color:var(--accent);
-}
-.card h3{font-size:17px;font-weight:600;margin-bottom:8px;}
-.card p{font-size:13.5px;color:var(--text-dim);line-height:1.65;}
+.mod-card:hover::before{opacity:0.7;}
 
-/* === Demo embed === */
-.demo-wrap{
-  position:relative;
-  border:1px solid var(--line-2);border-radius:14px;
-  background:var(--bg-1);
-  padding:8px;
-  box-shadow:0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(94,224,255,0.05);
-}
-.demo-wrap::before{
-  content:"";position:absolute;inset:-1px;border-radius:14px;
-  background:linear-gradient(135deg,rgba(94,224,255,0.3),transparent 40%,rgba(160,112,255,0.2));
-  z-index:-1;filter:blur(20px);opacity:0.5;
-}
-.demo-bar{
-  display:flex;align-items:center;gap:6px;
-  padding:8px 12px 10px;
+.mod-thumb{
+  height:140px;
+  background:#0a0f1c;
   border-bottom:1px solid var(--line);
-  margin-bottom:0;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
 }
-.demo-bar .dot{width:10px;height:10px;border-radius:50%;background:#3a4658;}
-.demo-bar .dot.r{background:#ff5f56;}
-.demo-bar .dot.y{background:#ffbd2e;}
-.demo-bar .dot.g{background:#27c93f;}
-.demo-bar .url{
-  margin-left:14px;flex:1;
-  font-family:'JetBrains Mono','Consolas',monospace;
-  font-size:11.5px;color:var(--text-faint);
-  background:rgba(0,0,0,0.3);padding:5px 12px;border-radius:5px;
-  border:1px solid var(--line);
-  text-align:center;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+.mod-thumb svg{width:90%;height:auto;max-width:240px;}
+.mod-cat{
+  position:absolute;top:10px;left:10px;
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:3px 8px;border-radius:4px;font-weight:600;
 }
-.demo-bar .open-new{
-  font-size:11.5px;color:var(--accent);padding:5px 10px;
-  border:1px solid var(--line-2);border-radius:5px;
-  transition:all .2s;
-}
-.demo-bar .open-new:hover{background:rgba(94,224,255,0.08);border-color:var(--accent);opacity:1;}
-.demo-frame{
-  width:100%;height:78vh;min-height:600px;
-  border:none;border-radius:0 0 10px 10px;
-  background:#f6f7f9;
-  display:block;
-}
+.mod-cat.rt{background:rgba(94,224,255,0.12);color:var(--accent);border:1px solid rgba(94,224,255,0.3);}
+.mod-cat.ks{background:rgba(160,112,255,0.12);color:var(--accent-2);border:1px solid rgba(160,112,255,0.3);}
+.mod-cat.full{background:rgba(255,174,94,0.12);color:var(--accent-3);border:1px solid rgba(255,174,94,0.3);}
 
-/* === How to use === */
-.how{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;
+.mod-body{padding:18px 20px 20px;flex:1;display:flex;flex-direction:column;}
+.mod-body h4{font-size:15.5px;font-weight:600;margin-bottom:6px;line-height:1.35;}
+.mod-body p{font-size:12.5px;color:var(--text-dim);line-height:1.6;flex:1;}
+.mod-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--text-faint);
 }
-@media(max-width:880px){.how{grid-template-columns:1fr;}}
-.step{
-  padding:24px 22px;
-  background:rgba(255,255,255,0.02);
-  border:1px solid var(--line);
-  border-radius:10px;
-  position:relative;
-}
-.step .num{
-  position:absolute;top:-12px;left:22px;
-  background:var(--bg-0);
-  padding:0 10px;
-  font-family:'JetBrains Mono','Consolas',monospace;
-  font-size:12px;color:var(--accent);
-  letter-spacing:1px;
-}
-.step h4{font-size:15px;font-weight:600;margin-bottom:8px;color:var(--text);}
-.step p{font-size:13px;color:var(--text-dim);line-height:1.65;}
-.step kbd{
-  display:inline-block;padding:1px 6px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid var(--line-2);border-radius:4px;
-  font-family:'JetBrains Mono','Consolas',monospace;
-  font-size:11px;color:var(--accent);
-}
+.mod-meta .arrow{color:var(--accent);font-weight:600;}
 
 /* === Footer === */
 footer{
   position:relative;z-index:1;
   border-top:1px solid var(--line);
-  margin-top:60px;padding:40px 32px;
+  margin-top:50px;padding:40px 32px;
   text-align:center;color:var(--text-faint);font-size:12.5px;
 }
 footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.7;}
@@ -277,112 +269,261 @@ footer .built{margin-top:8px;font-size:11.5px;color:var(--text-faint);opacity:0.
       <span>Waveguide Lab</span>
     </div>
     <div class="nav-links">
-      <a href="#overview">Overview</a>
-      <a href="#demo">Demo</a>
-      <a href="#guide">Guide</a>
+      <a href="#featured">Simulator</a>
+      <a href="#raytrace">Ray Tracing</a>
+      <a href="#kspace">K-Space</a>
     </div>
   </div>
 </nav>
 
 <section class="hero">
-  <div class="tag"><span class="pulse"></span>INTERACTIVE 3D SIMULATION</div>
+  <div class="tag"><span class="pulse"></span>INTERACTIVE 3D VISUALIZATION SUITE</div>
   <h1 class="hero-title">
     AR Waveguide<br>
-    <span class="grad">Pupil Expansion Visualizer</span>
+    <span class="grad">Interactive Lab</span>
   </h1>
   <p class="hero-sub">
-    互動式光線追跡模擬器 — 視覺化 AR 光波導中的 In-coupling、2D 擴瞳、Out-coupling 全路徑，並即時觀察光柵效率與 Eyebox 均勻度的變化。
+    從光線追跡到 k-space 動量空間 — 一系列互動式 3D 模擬，視覺化 AR 光波導中 In-coupling、Pupil Expansion、Out-coupling 的物理機制。
   </p>
   <div class="hero-cta">
-    <a href="#demo" class="btn btn-primary">
-      啟動模擬器
+    <a href="#featured" class="btn btn-primary">
+      開始探索
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
     </a>
-    <a href="#overview" class="btn btn-ghost">了解更多</a>
+    <a href="#raytrace" class="btn btn-ghost">查看所有模組</a>
   </div>
 
   <div class="stats">
+    <div class="stat"><div class="num">6</div><div class="label">Interactive Modules</div></div>
     <div class="stat"><div class="num">3D</div><div class="label">Ray Tracing</div></div>
+    <div class="stat"><div class="num">k-space</div><div class="label">Momentum Analysis</div></div>
     <div class="stat"><div class="num">9×9</div><div class="label">Eyebox Grid</div></div>
-    <div class="stat"><div class="num">2D</div><div class="label">Pupil Expansion</div></div>
-    <div class="stat"><div class="num">RGB</div><div class="label">Multi-wavelength</div></div>
   </div>
 </section>
 
-<section class="block" id="overview">
+<!-- =========================== FEATURED =========================== -->
+<section class="block" id="featured">
   <div class="section-head">
-    <div class="section-eyebrow">— Capabilities —</div>
-    <h2 class="section-title">這個模擬器能看到什麼？</h2>
-    <p class="section-desc">將原本只能在論文圖示中理解的擴瞳機制，轉成可即時操作、即時回饋的視覺化工具。</p>
+    <div class="section-eyebrow">— Flagship Demo —</div>
+    <h2 class="section-title">完整波導模擬器</h2>
+    <p class="section-desc">最完整的版本：3D 光線追跡 + 光柵效率分區調整 + 9 宮格 Eyebox 均勻度分析，建議從這裡開始體驗。</p>
   </div>
-  <div class="features">
-    <div class="card">
-      <div class="icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+
+  <a href="simulator.html" class="featured" target="_blank">
+    <div class="featured-info">
+      <div class="featured-badge">★ FLAGSHIP</div>
+      <h3>Full Pipeline Simulator</h3>
+      <p>G1 (in-coupler) → TIR → G2 (5-zone EPE) → TIR → G3 (out-coupler)，含光柵效率即時調整與 Eyebox 9 宮格亮度分布。</p>
+      <div class="featured-tags">
+        <span class="chip">Ray Tracing</span>
+        <span class="chip">Grating Efficiency</span>
+        <span class="chip">Eyebox Heatmap</span>
+        <span class="chip">FOV Selection</span>
       </div>
-      <h3>3D 光線追跡</h3>
-      <p>從顯示引擎 → In-coupler → TIR 傳輸 → Pupil expander → Out-coupler，完整呈現光在波導內的傳播路徑與全反射行為。</p>
-    </div>
-    <div class="card">
-      <div class="icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      <div>
+        <span class="btn btn-primary">啟動模擬器
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </span>
       </div>
-      <h3>光柵效率調整</h3>
-      <p>分區調整 In/Expander/Out-coupler 的繞射效率，立即觀察光強分布變化，理解亮度均勻度的設計權衡。</p>
     </div>
-    <div class="card">
-      <div class="icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+    <div class="featured-preview">
+      <!-- abstract waveguide illustration -->
+      <svg viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="wgGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#5ee0ff" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#a070ff" stop-opacity="0.15"/>
+          </linearGradient>
+          <linearGradient id="rayG" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffae5e"/>
+            <stop offset="100%" stop-color="#5ee0ff"/>
+          </linearGradient>
+        </defs>
+        <!-- waveguide slab -->
+        <rect x="40" y="70" width="260" height="100" rx="4" fill="url(#wgGrad)" stroke="#5ee0ff" stroke-opacity="0.4"/>
+        <!-- gratings G1, G2, G3 -->
+        <rect x="60" y="70" width="40" height="100" fill="#5ee0ff" fill-opacity="0.18" stroke="#5ee0ff" stroke-opacity="0.5"/>
+        <rect x="130" y="70" width="100" height="100" fill="#a070ff" fill-opacity="0.14" stroke="#a070ff" stroke-opacity="0.5"/>
+        <rect x="250" y="70" width="40" height="100" fill="#ffae5e" fill-opacity="0.18" stroke="#ffae5e" stroke-opacity="0.5"/>
+        <!-- TIR zigzag rays -->
+        <polyline points="80,50 80,80 105,160 130,80 155,160 180,80 205,160 230,80 250,160" fill="none" stroke="url(#rayG)" stroke-width="1.4" stroke-opacity="0.85"/>
+        <polyline points="80,50 80,90 110,160 140,90 170,160 200,90 230,160 260,90 270,200" fill="none" stroke="#5ee0ff" stroke-width="1" stroke-opacity="0.5"/>
+        <!-- output rays -->
+        <line x1="265" y1="170" x2="270" y2="220" stroke="#ffae5e" stroke-width="1.2" opacity="0.7"/>
+        <line x1="275" y1="170" x2="285" y2="220" stroke="#ffae5e" stroke-width="1.2" opacity="0.7"/>
+        <line x1="255" y1="170" x2="245" y2="220" stroke="#ffae5e" stroke-width="1.2" opacity="0.7"/>
+        <!-- labels -->
+        <text x="80" y="195" fill="#5ee0ff" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" opacity="0.9">G1</text>
+        <text x="180" y="195" fill="#a070ff" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" opacity="0.9">G2 (EPE)</text>
+        <text x="270" y="195" fill="#ffae5e" font-size="11" text-anchor="middle" font-family="JetBrains Mono, monospace" opacity="0.9">G3</text>
+        <text x="80" y="40" fill="#e6ecf5" font-size="10" text-anchor="middle" opacity="0.7">input</text>
+        <text x="270" y="232" fill="#e6ecf5" font-size="10" text-anchor="middle" opacity="0.7">to eye</text>
+      </svg>
+    </div>
+  </a>
+</section>
+
+<!-- =========================== RAY TRACING =========================== -->
+<section class="block" id="raytrace">
+  <div class="section-head">
+    <div class="section-eyebrow">— Real-space Ray Tracing —</div>
+    <h2 class="section-title">光線追跡模組</h2>
+    <p class="section-desc">在實空間中追蹤光在波導內的傳播路徑，從單一入射光柵到三道光柵的完整擴瞳系統。</p>
+  </div>
+
+  <div class="modules">
+    <a href="raytrace-incoupler.html" class="mod-card" target="_blank">
+      <div class="mod-thumb">
+        <span class="mod-cat rt">Ray Tracing</span>
+        <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="40" width="200" height="50" rx="3" fill="#5ee0ff" fill-opacity="0.08" stroke="#5ee0ff" stroke-opacity="0.4"/>
+          <rect x="40" y="40" width="30" height="50" fill="#5ee0ff" fill-opacity="0.2" stroke="#5ee0ff" stroke-opacity="0.6"/>
+          <polyline points="55,15 55,45 75,85 95,45 115,85 135,45 155,85 175,45 195,85 215,55" fill="none" stroke="#5ee0ff" stroke-width="1.2" opacity="0.85"/>
+          <text x="55" y="105" fill="#5ee0ff" font-size="9" text-anchor="middle" font-family="JetBrains Mono, monospace">G1</text>
+        </svg>
       </div>
-      <h3>Eyebox 9 宮格分析</h3>
-      <p>以 3×3 grid 量化 Eyebox 內各位置的相對亮度，視覺化擴瞳設計對人因可視範圍的實際影響。</p>
-    </div>
+      <div class="mod-body">
+        <h4>In-coupler 光線追跡</h4>
+        <p>單一入射光柵與全反射 (TIR) 的最簡示範。FOV 30°、4:3 比例，是理解波導傳輸的最佳起點。</p>
+        <div class="mod-meta"><span>Module 01 · Basics</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
+
+    <a href="raytrace-3gratings.html" class="mod-card" target="_blank">
+      <div class="mod-thumb">
+        <span class="mod-cat rt">Ray Tracing</span>
+        <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="40" width="200" height="50" rx="3" fill="#5ee0ff" fill-opacity="0.08" stroke="#5ee0ff" stroke-opacity="0.4"/>
+          <rect x="35" y="40" width="25" height="50" fill="#5ee0ff" fill-opacity="0.2" stroke="#5ee0ff" stroke-opacity="0.6"/>
+          <rect x="90" y="40" width="60" height="50" fill="#a070ff" fill-opacity="0.18" stroke="#a070ff" stroke-opacity="0.6"/>
+          <rect x="180" y="40" width="25" height="50" fill="#ffae5e" fill-opacity="0.2" stroke="#ffae5e" stroke-opacity="0.6"/>
+          <polyline points="48,15 48,45 65,85 85,45 105,85 125,45 145,85 165,45 185,85 195,45" fill="none" stroke="#ffae5e" stroke-width="1.2" opacity="0.85"/>
+          <line x1="190" y1="90" x2="195" y2="115" stroke="#ffae5e" stroke-width="1" opacity="0.7"/>
+          <line x1="195" y1="90" x2="205" y2="115" stroke="#ffae5e" stroke-width="1" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="mod-body">
+        <h4>3 道光柵完整路徑</h4>
+        <p>G1 in-coupler + G2 EPE + G3 out-coupler 的完整 3D 光線追跡，看見 2D 擴瞳的實際幾何行為。</p>
+        <div class="mod-meta"><span>Module 02 · Full Path</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
+
+    <a href="simulator.html" class="mod-card" target="_blank">
+      <div class="mod-thumb">
+        <span class="mod-cat full">Full Sim</span>
+        <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="36" width="200" height="50" rx="3" fill="#ffae5e" fill-opacity="0.06" stroke="#ffae5e" stroke-opacity="0.35"/>
+          <rect x="35" y="36" width="22" height="50" fill="#5ee0ff" fill-opacity="0.2"/>
+          <rect x="80" y="36" width="80" height="50" fill="#a070ff" fill-opacity="0.18"/>
+          <rect x="180" y="36" width="22" height="50" fill="#ffae5e" fill-opacity="0.2"/>
+          <!-- eyebox grid -->
+          <g transform="translate(155,92)">
+            <rect width="10" height="10" fill="#ffae5e" opacity="0.9"/>
+            <rect x="11" width="10" height="10" fill="#ffae5e" opacity="0.6"/>
+            <rect x="22" width="10" height="10" fill="#ffae5e" opacity="0.3"/>
+            <rect y="11" width="10" height="10" fill="#ffae5e" opacity="0.7"/>
+            <rect x="11" y="11" width="10" height="10" fill="#ffae5e" opacity="0.5"/>
+            <rect x="22" y="11" width="10" height="10" fill="#ffae5e" opacity="0.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="mod-body">
+        <h4>完整模擬器（Eyebox + Efficiency）</h4>
+        <p>含 5-zone G2 效率調整、9 宮格 Eyebox 均勻度 heatmap、論文式 BTM 角度均勻度分析。</p>
+        <div class="mod-meta"><span>Module 03 · Flagship</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
   </div>
 </section>
 
-<section class="block" id="demo">
+<!-- =========================== K-SPACE =========================== -->
+<section class="block" id="kspace">
   <div class="section-head">
-    <div class="section-eyebrow">— Live Demo —</div>
-    <h2 class="section-title">3D Ray Tracing Simulator</h2>
-    <p class="section-desc">滑鼠拖曳旋轉視角，左右側面板可調整 FOV、光柵效率與顯示參數。</p>
+    <div class="section-eyebrow">— Momentum Space Analysis —</div>
+    <h2 class="section-title">K-space 動量空間分析</h2>
+    <p class="section-desc">從動量空間的角度理解光柵耦合條件 — 為什麼 FOV 會被 TIR 角度範圍限制？光柵向量如何把 FOV 區段搬到 TIR 環內？三個漸進式模組讓物理意義一目了然。</p>
   </div>
-  <div class="demo-wrap">
-    <div class="demo-bar">
-      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="url">waveguide-demo / simulator.html</span>
-      <a href="simulator.html" target="_blank" class="open-new">獨立視窗開啟 ↗</a>
-    </div>
-    <iframe class="demo-frame" src="simulator.html" title="Waveguide 3D Simulator" loading="lazy"></iframe>
-  </div>
-</section>
 
-<section class="block" id="guide">
-  <div class="section-head">
-    <div class="section-eyebrow">— How to Use —</div>
-    <h2 class="section-title">操作指引</h2>
-  </div>
-  <div class="how">
-    <div class="step">
-      <div class="num">01 / VIEW</div>
-      <h4>調整視角</h4>
-      <p>在 3D 畫布上 <kbd>滑鼠左鍵拖曳</kbd> 可旋轉視角；面板上方的 view 按鈕可切換預設視角（Top / Side / Iso）。</p>
-    </div>
-    <div class="step">
-      <div class="num">02 / FOV</div>
-      <h4>選擇 FOV 角度</h4>
-      <p>從九宮格中勾選要追跡的入射角度，每個 cell 對應不同 (θx, θy)，可單選或全選比較。</p>
-    </div>
-    <div class="step">
-      <div class="num">03 / GRATING</div>
-      <h4>調整光柵效率</h4>
-      <p>在右側面板分別調整 In-coupler、Expander、Out-coupler 的效率，即時觀察 Eyebox 9 宮格的均勻度變化。</p>
-    </div>
+  <div class="modules">
+    <a href="kspace-1grating.html" class="mod-card" target="_blank">
+      <div class="mod-thumb">
+        <span class="mod-cat ks">K-Space</span>
+        <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="120" cy="60" r="42" fill="none" stroke="#a070ff" stroke-opacity="0.5" stroke-width="1.2"/>
+          <circle cx="120" cy="60" r="26" fill="none" stroke="#a070ff" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="3,2"/>
+          <rect x="100" y="40" width="40" height="40" fill="none" stroke="#5ee0ff" stroke-width="1.4" opacity="0.85"/>
+          <g fill="#5ee0ff">
+            <circle cx="105" cy="45" r="1.5"/><circle cx="120" cy="45" r="1.5"/><circle cx="135" cy="45" r="1.5"/>
+            <circle cx="105" cy="60" r="1.5"/><circle cx="120" cy="60" r="1.5"/><circle cx="135" cy="60" r="1.5"/>
+            <circle cx="105" cy="75" r="1.5"/><circle cx="120" cy="75" r="1.5"/><circle cx="135" cy="75" r="1.5"/>
+          </g>
+          <line x1="120" y1="60" x2="180" y2="60" stroke="#ffae5e" stroke-width="1.5" opacity="0.85"/>
+          <polygon points="180,60 174,57 174,63" fill="#ffae5e"/>
+        </svg>
+      </div>
+      <div class="mod-body">
+        <h4>單一光柵 K-space</h4>
+        <p>9 個 FOV 點 × 4 mm 光束在 In-coupler 上的 k-space 分布：哪些方向能被耦合進 TIR？</p>
+        <div class="mod-meta"><span>Module 04 · 1 Grating</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
+
+    <a href="kspace-2gratings.html" class="mod-card" target="_blank">
+      <div class="mod-thumb">
+        <span class="mod-cat ks">K-Space</span>
+        <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="120" cy="60" r="42" fill="none" stroke="#a070ff" stroke-opacity="0.5" stroke-width="1.2"/>
+          <rect x="80" y="40" width="36" height="40" fill="none" stroke="#5ee0ff" stroke-width="1.4" opacity="0.85"/>
+          <rect x="124" y="40" width="36" height="40" fill="none" stroke="#a070ff" stroke-width="1.4" opacity="0.85"/>
+          <g fill="#5ee0ff" opacity="0.9">
+            <circle cx="88" cy="48" r="1.4"/><circle cx="98" cy="48" r="1.4"/><circle cx="108" cy="48" r="1.4"/>
+            <circle cx="88" cy="60" r="1.4"/><circle cx="98" cy="60" r="1.4"/><circle cx="108" cy="60" r="1.4"/>
+            <circle cx="88" cy="72" r="1.4"/><circle cx="98" cy="72" r="1.4"/><circle cx="108" cy="72" r="1.4"/>
+          </g>
+          <g fill="#a070ff" opacity="0.9">
+            <circle cx="132" cy="48" r="1.4"/><circle cx="142" cy="48" r="1.4"/><circle cx="152" cy="48" r="1.4"/>
+            <circle cx="132" cy="60" r="1.4"/><circle cx="142" cy="60" r="1.4"/><circle cx="152" cy="60" r="1.4"/>
+            <circle cx="132" cy="72" r="1.4"/><circle cx="142" cy="72" r="1.4"/><circle cx="152" cy="72" r="1.4"/>
+          </g>
+          <path d="M 116 60 L 124 60" stroke="#ffae5e" stroke-width="1.4"/>
+        </svg>
+      </div>
+      <div class="mod-body">
+        <h4>雙光柵 K-space (G1 + G2)</h4>
+        <p>加入 G2 EPE 後的 k-space：每個 FOV 點的 m=0,+1 階繞射如何沿著光柵向量平移。</p>
+        <div class="mod-meta"><span>Module 05 · 2 Gratings</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
+
+    <a href="kspace-3gratings.html" class="mod-card" target="_blank">
+      <div class="mod-thumb">
+        <span class="mod-cat ks">K-Space</span>
+        <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="120" cy="60" r="44" fill="none" stroke="#a070ff" stroke-opacity="0.5" stroke-width="1.2"/>
+          <circle cx="120" cy="60" r="28" fill="none" stroke="#a070ff" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="3,2"/>
+          <g opacity="0.85">
+            <rect x="74" y="42" width="30" height="36" fill="none" stroke="#5ee0ff" stroke-width="1.3"/>
+            <rect x="106" y="42" width="30" height="36" fill="none" stroke="#a070ff" stroke-width="1.3"/>
+            <rect x="138" y="42" width="30" height="36" fill="none" stroke="#ffae5e" stroke-width="1.3"/>
+          </g>
+          <g fill="#5ee0ff"><circle cx="89" cy="60" r="1.4"/><circle cx="84" cy="55" r="1.4"/><circle cx="94" cy="55" r="1.4"/></g>
+          <g fill="#a070ff"><circle cx="121" cy="60" r="1.4"/><circle cx="116" cy="55" r="1.4"/><circle cx="126" cy="55" r="1.4"/></g>
+          <g fill="#ffae5e"><circle cx="153" cy="60" r="1.4"/><circle cx="148" cy="55" r="1.4"/><circle cx="158" cy="55" r="1.4"/></g>
+        </svg>
+      </div>
+      <div class="mod-body">
+        <h4>三光柵 K-space (G1 + G2 + G3)</h4>
+        <p>完整擴瞳系統的 k-space 演化：FOV 從入射 → EPE 平移 → out-coupler 還原到自由空間的全程。</p>
+        <div class="mod-meta"><span>Module 06 · 3 Gratings</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
   </div>
 </section>
 
 <footer>
-  <div>AR Waveguide Pupil Expansion · Interactive 3D Visualization</div>
-  <div class="built">Built with vanilla JavaScript · Hosted on GitHub Pages</div>
+  <div>AR Waveguide Lab · Interactive 3D Visualization Suite</div>
+  <div class="built">6 modules · vanilla JavaScript · Hosted on GitHub Pages</div>
 </footer>
 
 </body>

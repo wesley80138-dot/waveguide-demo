@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>3D 波導光追跡 — 3 道光柵 (G1+G2+G3) Waveguide TIR Ray Tracing</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#f6f7f9; color:#1a1a1a; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; min-height:100vh; padding:8px; }
+h1 { text-align:center; padding:6px 0 8px; font-size:18px; color:#1a3a6a; letter-spacing:0.5px; font-weight:600; }
+.wrap { display:flex; gap:10px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+canvas { background:#ffffff; border:1px solid #d8dde5; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+#cv3d { cursor:grab; }
+#cv3d:active { cursor:grabbing; }
+.col { display:flex; flex-direction:column; gap:8px; }
+.panel { background:#ffffff; border:1px solid #d8dde5; border-radius:8px; padding:10px 14px; width:230px; font-size:11.5px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.panel h2 { font-size:13px; color:#1a3a6a; margin-bottom:8px; border-bottom:1px solid #e3e7ee; padding-bottom:5px; font-weight:600; }
+.row { margin-bottom:8px; }
+.row label { display:block; font-size:11px; color:#5a6a7a; margin-bottom:2px; }
+.row .val { float:right; color:#c8741c; font-weight:bold; font-size:11px; }
+input[type=range] { width:100%; accent-color:#3a78c8; }
+select { width:100%; padding:3px 5px; background:#fff; color:#1a1a1a; border:1px solid #d0d6dd; border-radius:4px; font-size:11px; }
+.info { background:#f5f8fc; border:1px solid #dde5ee; border-radius:6px; padding:7px 9px; margin-top:8px; font-size:10.5px; line-height:1.55; color:#2a3a4a; }
+.info b { color:#c8741c; }
+.legend { margin-top:8px; font-size:10.5px; color:#2a3a4a; }
+.legend div { display:flex; align-items:center; gap:6px; margin:2px 0; }
+.legend .swatch { width:16px; height:4px; border-radius:2px; flex-shrink:0; }
+.legend .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.tip { margin-top:6px; font-size:10px; color:#7a8a9a; line-height:1.4; }
+.fov-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; padding:5px; background:#f0f3f8; border:1px solid #dde3ec; border-radius:5px; }
+.fov-cell { display:flex; align-items:center; justify-content:center; gap:4px; padding:3px 2px; background:#fff; border:1px solid #d8dde5; border-radius:3px; cursor:pointer; user-select:none; font-size:9.5px; }
+.fov-cell:hover { background:#e8eef6; }
+.fov-cell input { margin:0; cursor:pointer; }
+.fov-cell .cdot { width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.fov-btns { display:flex; gap:4px; margin-top:5px; }
+.fov-btns button { flex:1; padding:3px 4px; font-size:10px; background:#e8edf3; color:#1a3a6a; border:1px solid #c5ccd5; border-radius:3px; cursor:pointer; }
+.fov-btns button:hover { background:#d5dde8; }
+.view-btns { display:flex; gap:4px; }
+.view-btns button { flex:1; padding:5px 4px; font-size:11px; background:#1a3a6a; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+.view-btns button:hover { background:#2a5aaa; }
+.view-btns button.active { background:#c8741c; }
+.grect { background:#fafcfe; border:1px solid #dde3ec; border-radius:5px; padding:6px 8px; margin-bottom:6px; }
+.grect h3 { font-size:11px; color:#1a3a6a; font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.grect h3 .ind { width:10px; height:10px; border-radius:2px; }
+.grect .row2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:4px; }
+.grect .row2 .mini label { font-size:9.5px; color:#6a7a8a; }
+.grect .row2 .mini .val { color:#c8741c; font-weight:bold; font-size:10px; }
+.grect input[type=range] { height:14px; }
+/* Compact panel */
+.panel { padding:8px 10px; max-height:calc(100vh - 30px); overflow-y:auto; }
+.panel h2 { font-size:12px; margin-bottom:4px; padding-bottom:3px; }
+.row { margin-bottom:4px; }
+.row label { font-size:10.5px; margin-bottom:1px; }
+.row .val { font-size:10.5px; }
+input[type=range] { height:14px; }
+details.sec { border:1px solid #dde3ec; border-radius:5px; padding:4px 6px; margin-bottom:5px; background:#fafcfe; }
+details.sec > summary { font-size:11px; font-weight:600; color:#1a3a6a; cursor:pointer; padding:2px 0; user-select:none; list-style:none; display:flex; align-items:center; gap:4px; }
+details.sec > summary::before { content:"▶"; font-size:9px; transition:transform .15s; }
+details.sec[open] > summary::before { transform:rotate(90deg); }
+details.sec > .body { padding-top:5px; padding-bottom:2px; }
+.row2col { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.row2col .row { margin-bottom:3px; }
+.legend { font-size:9.5px; }
+.legend div { margin:1px 0; }
+.tip { font-size:9.5px; margin-top:3px; }
+.info { font-size:10px; padding:5px 7px; }
+</style>
+</head>
+<body>
+<h1>3D 波導光追跡 — 3 道光柵 EPE: G1 (in-coupler) + G2 (EPE) + G3 (out-coupler)</h1>
+<div class="wrap">
+<canvas id="cv3d" width="780" height="540"></canvas>
+<div class="col">
+  <div class="panel">
+    <h2>參數控制 Parameters</h2>
+
+    <details class="sec" open><summary>視角 View</summary><div class="body">
+      <div class="view-btns">
+        <button id="vPersp">透視</button>
+        <button id="vTop">上視 xy</button>
+        <button id="vSide">側視 xz</button>
+      </div>
+      <div class="view-btns" style="margin-top:3px;">
+        <button id="vFit" style="background:#3aa84a;">📐 Zoom Fit</button>
+      </div>
+    </div></details>
+
+    <details class="sec" open><summary>FOV / 光學基本</summary><div class="body">
+      <div class="row">
+        <label>對角 FOV (&deg;) <span class="val" id="vFOV">30</span></label>
+        <input type="range" id="sFOV" min="10" max="50" step="1" value="30">
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>Aspect</label>
+          <select id="sAsp">
+            <option value="4:3" selected>4:3</option>
+            <option value="16:9">16:9</option>
+            <option value="3:2">3:2</option>
+            <option value="1:1">1:1</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>n (波導) <span class="val" id="vN">1.75</span></label>
+          <input type="range" id="sN" min="1.4" max="2.2" step="0.01" value="1.75">
+        </div>
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>&lambda; (nm) <span class="val" id="vLam">530</span></label>
+          <input type="range" id="sLam" min="380" max="780" step="5" value="530">
+        </div>
+        <div class="row">
+          <label>光束寬 (mm) <span class="val" id="vBW">4</span></label>
+          <input type="range" id="sBW" min="1" max="8" step="0.5" value="4">
+        </div>
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>波導厚 d (mm) <span class="val" id="vD">0.5</span></label>
+          <input type="range" id="sD" min="0.3" max="2.0" step="0.05" value="0.5">
+        </div>
+        <div class="row">
+          <label>Eye relief (mm) <span class="val" id="vER">18</span></label>
+          <input type="range" id="sER" min="8" max="30" step="1" value="18">
+        </div>
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>Eyebox W (mm) <span class="val" id="vEbW">8</span></label>
+          <input type="range" id="sEbW" min="2" max="20" step="0.5" value="8">
+        </div>
+        <div class="row">
+          <label>Eyebox H (mm) <span class="val" id="vEbH">6</span></label>
+          <input type="range" id="sEbH" min="2" max="20" step="0.5" value="6">
+        </div>
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>鏡片 A (寬, mm) <span class="val" id="vLensA">80</span></label>
+          <input type="range" id="sLensA" min="40" max="100" step="1" value="80">
+        </div>
+        <div class="row">
+          <label>鏡片 B (高, mm) <span class="val" id="vLensB">50</span></label>
+          <input type="range" id="sLensB" min="20" max="60" step="1" value="50">
+        </div>
+      </div>
+    </div></details>
+
+    <details class="sec" open><summary>光柵 G1 / G2 / G3 (Λ, φ)</summary><div class="body">
+      <div class="row2col">
+        <div class="row">
+          <label>G1 Λ₁ <span class="val" id="vP">385</span></label>
+          <input type="range" id="sP" min="200" max="700" step="5" value="385">
+        </div>
+        <div class="row">
+          <label>G1 φ₁ <span class="val" id="vGA">0</span></label>
+          <input type="range" id="sGA" min="-180" max="180" step="1" value="0">
+        </div>
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>G2 Λ₂ <span class="val" id="vP2">385</span></label>
+          <input type="range" id="sP2" min="200" max="700" step="5" value="385">
+        </div>
+        <div class="row">
+          <label>G2 φ₂ <span class="val" id="vGA2">120</span></label>
+          <input type="range" id="sGA2" min="-180" max="180" step="1" value="120">
+        </div>
+      </div>
+      <div class="row2col">
+        <div class="row">
+          <label>G3 Λ₃ <span class="val" id="vP3">385</span></label>
+          <input type="range" id="sP3" min="200" max="700" step="5" value="385">
+        </div>
+        <div class="row">
+          <label>G3 φ₃ <span class="val" id="vGA3">-90</span></label>
+          <input type="range" id="sGA3" min="-180" max="180" step="1" value="-90">
+        </div>
+      </div>
+      <div style="margin-top:6px; display:flex; justify-content:center;">
+        <canvas id="cvKxKy" width="220" height="220" style="background:#fff;border:1px solid #d8dde5;border-radius:5px;"></canvas>
+      </div>
+    </div></details>
+
+    <details class="sec"><summary>光柵位置 (G1 / G2 / G3 區域)</summary><div class="body">
+      <div class="row" style="font-size:10px;color:#1a3a6a;font-weight:600;">
+        <span class="ind" style="display:inline-block;width:9px;height:9px;background:#3aa84a;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>G1
+      </div>
+      <div class="row2col">
+        <div class="row"><label>x <span class="val" id="vG1cx">15</span></label>
+          <input type="range" id="sG1cx" min="2" max="78" step="1" value="15"></div>
+        <div class="row"><label>y <span class="val" id="vG1cy">-17</span></label>
+          <input type="range" id="sG1cy" min="-25" max="25" step="1" value="-17"></div>
+      </div>
+      <div class="row" style="font-size:10px;color:#1a3a6a;font-weight:600;margin-top:5px;">
+        <span class="ind" style="display:inline-block;width:9px;height:9px;background:#c8741c;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>G2
+      </div>
+      <div class="row2col">
+        <div class="row"><label>x_min <span class="val" id="vG2xa">13</span></label>
+          <input type="range" id="sG2xa" min="0" max="78" step="1" value="13"></div>
+        <div class="row"><label>x_max <span class="val" id="vG2xb">49</span></label>
+          <input type="range" id="sG2xb" min="0" max="80" step="1" value="49"></div>
+      </div>
+      <div class="row2col">
+        <div class="row"><label>y_min <span class="val" id="vG2ya">-25</span></label>
+          <input type="range" id="sG2ya" min="-25" max="25" step="1" value="-25"></div>
+        <div class="row"><label>y_max <span class="val" id="vG2yb">-13</span></label>
+          <input type="range" id="sG2yb" min="-25" max="25" step="1" value="-13"></div>
+      </div>
+      <div class="row" style="font-size:10px;color:#1a3a6a;font-weight:600;margin-top:5px;">
+        <span class="ind" style="display:inline-block;width:9px;height:9px;background:#22a2c8;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>G3 (位置可調，大小由 ER+FOV 決定)
+      </div>
+      <div class="row2col">
+        <div class="row"><label>cx <span class="val" id="vG3cx">29</span></label>
+          <input type="range" id="sG3cx" min="0" max="80" step="1" value="29"></div>
+        <div class="row"><label>cy <span class="val" id="vG3cy">-6</span></label>
+          <input type="range" id="sG3cy" min="-25" max="25" step="1" value="-6"></div>
+      </div>
+      <div class="row" style="font-size:9.5px;color:#5a6a7a;margin-top:2px;">
+        Size: <b id="vG3Size">— × —</b> (= 光束 + 2·ER·tan(½FOV))
+      </div>
+    </div></details>
+
+    <details class="sec" open><summary>顯示 FOV (3×3 取樣)</summary><div class="body">
+      <div class="fov-grid" id="fovGrid"></div>
+      <div class="fov-btns">
+        <button id="btnAll">全選</button>
+        <button id="btnNone">全清</button>
+        <button id="btnCenter">僅中心</button>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;cursor:pointer;">
+          <input type="checkbox" id="cbEpeEnv" checked style="margin:0;">
+          <span style="color:#1a3a6a;font-weight:600;">顯示 G2 應有區域 (4 條紅虛線)</span>
+        </label>
+        <div class="tip" style="margin-top:2px;">
+          1,2: G1 上下緣往前 (post-G1 極端 FOV) ｜ 3,4: G3 兩角往後 (post-G2 極端 FOV)
+        </div>
+      </div>
+    </div></details>
+
+    <div class="info" id="info">…</div>
+
+    <details class="sec"><summary>圖例 / 操作說明</summary><div class="body">
+      <div class="legend">
+        <div><span class="swatch" style="background:#d96666"></span> &minus;FOV<sub>x</sub> (kx&lt;0)</div>
+        <div><span class="swatch" style="background:#666"></span> 中心 (kx=0)</div>
+        <div><span class="swatch" style="background:#3a78c8"></span> +FOV<sub>x</sub> (kx&gt;0)</div>
+        <div><span class="dot" style="background:#1c2848"></span> G1 in-coupler</div>
+        <div><span class="dot" style="background:#a85820"></span> G2 EPE</div>
+        <div><span class="dot" style="background:#2080a8"></span> G3 out-coupler</div>
+        <div style="font-size:9px;color:#7a8a9a;margin-top:2px;">線型: 實→短虛→長虛→出射</div>
+      </div>
+      <div class="tip">滑鼠拖曳:旋轉｜滾輪:縮放</div>
+    </div></details>
+  </div>
+</div>
+</div>
+
+<script>
+// ===== ELEMENTS =====
+const cv3d = document.getElementById('cv3d');
+const ctx = cv3d.getContext('2d');
+const W = cv3d.width, H = cv3d.height;
+
+const cvK = document.getElementById('cvKxKy');
+const ctxK = cvK.getContext('2d');
+
+const sFOV = document.getElementById('sFOV');
+const sAsp = document.getElementById('sAsp');
+const sN   = document.getElementById('sN');
+const sLam = document.getElementById('sLam');
+const sP   = document.getElementById('sP');
+const sGA  = document.getElementById('sGA');
+const sP2  = document.getElementById('sP2');
+const sGA2 = document.getElementById('sGA2');
+const sP3  = document.getElementById('sP3');
+const sGA3 = document.getElementById('sGA3');
+const sBW  = document.getElementById('sBW');
+const sD   = document.getElementById('sD');
+const vFOV = document.getElementById('vFOV');
+const vN   = document.getElementById('vN');
+const vLam = document.getElementById('vLam');
+const vP   = document.getElementById('vP');
+const vGA  = document.getElementById('vGA');
+const vP2  = document.getElementById('vP2');
+const vGA2 = document.getElementById('vGA2');
+const vP3  = document.getElementById('vP3');
+const vGA3 = document.getElementById('vGA3');
+const vBW  = document.getElementById('vBW');
+const vD   = document.getElementById('vD');
+const info = document.getElementById('info');
+
+[sFOV, sAsp, sN, sLam, sP, sGA, sP2, sGA2, sP3, sGA3, sBW, sD]
+  .forEach(s => s.addEventListener('input', draw));
+
+// Eye relief + eyebox + lens-shape sliders (drive G3 size, eyebox, lens outline)
+const sER = document.getElementById('sER');
+const sEbW = document.getElementById('sEbW');
+const sEbH = document.getElementById('sEbH');
+const sLensA = document.getElementById('sLensA');
+const sLensB = document.getElementById('sLensB');
+const vER = document.getElementById('vER');
+const vEbW = document.getElementById('vEbW');
+const vEbH = document.getElementById('vEbH');
+const vLensA = document.getElementById('vLensA');
+const vLensB = document.getElementById('vLensB');
+[sER, sEbW, sEbH, sLensA, sLensB].forEach(s => s.addEventListener('input', draw));
+
+// EPE envelope toggle
+const cbEpeEnv = document.getElementById('cbEpeEnv');
+cbEpeEnv.addEventListener('change', draw);
+
+// Read lens A & B → update bounding box from actual lens curve
+function updateLensBounds() {
+  lensA = parseFloat(sLensA.value);
+  lensB = parseFloat(sLensB.value);
+  const bb = lensBoundingBox();
+  wgX0 = bb.xMin; wgX1 = bb.xMax;
+  wgY0 = bb.yMin; wgY1 = bb.yMax;
+  vLensA.textContent = lensA;
+  vLensB.textContent = lensB;
+}
+// Globals (populated each draw)
+let eyeboxCx = 0, eyeboxCy = 0, eyeboxW = 8, eyeboxH = 6, eyeReliefMM = 18;
+
+// Grating position sliders
+const sG1cx = document.getElementById('sG1cx');
+const sG1cy = document.getElementById('sG1cy');
+const sG2xa = document.getElementById('sG2xa');
+const sG2xb = document.getElementById('sG2xb');
+const sG2ya = document.getElementById('sG2ya');
+const sG2yb = document.getElementById('sG2yb');
+const sG3cx = document.getElementById('sG3cx');
+const sG3cy = document.getElementById('sG3cy');
+const vG1cx = document.getElementById('vG1cx');
+const vG1cy = document.getElementById('vG1cy');
+const vG2xa = document.getElementById('vG2xa');
+const vG2xb = document.getElementById('vG2xb');
+const vG2ya = document.getElementById('vG2ya');
+const vG2yb = document.getElementById('vG2yb');
+const vG3cx = document.getElementById('vG3cx');
+const vG3cy = document.getElementById('vG3cy');
+const vG3Size = document.getElementById('vG3Size');
+[sG1cx, sG1cy, sG2xa, sG2xb, sG2ya, sG2yb, sG3cx, sG3cy]
+  .forEach(s => s.addEventListener('input', draw));
+
+// Read positions from sliders into the mutable globals + update labels.
+// G3 size is AUTO-COMPUTED from eye relief + FOV + beam width:
+//   G3_w = beam + 2·ER·tan(θ_h),  G3_h = beam + 2·ER·tan(θ_v)
+// where (θ_h, θ_v) are the horizontal / vertical half-FOV.
+function updateGratingPositions() {
+  inCx = parseFloat(sG1cx.value); inCy = parseFloat(sG1cy.value);
+  g2_xMin = parseFloat(sG2xa.value); g2_xMax = parseFloat(sG2xb.value);
+  g2_yMin = parseFloat(sG2ya.value); g2_yMax = parseFloat(sG2yb.value);
+  if (g2_xMin > g2_xMax) [g2_xMin, g2_xMax] = [g2_xMax, g2_xMin];
+  if (g2_yMin > g2_yMax) [g2_yMin, g2_yMax] = [g2_yMax, g2_yMin];
+
+  const g3cx = parseFloat(sG3cx.value);
+  const g3cy = parseFloat(sG3cy.value);
+  const ER  = parseFloat(sER.value);
+  const ebW = parseFloat(sEbW.value);
+  const ebH = parseFloat(sEbH.value);
+  // Compute half-FOV
+  const fovDiagDeg = parseFloat(sFOV.value);
+  const aspStr = sAsp.value;
+  const [aw, ah] = aspStr.split(':').map(Number);
+  const tanDiag = Math.tan(fovDiagDeg/2 * Math.PI/180);
+  const norm = Math.sqrt(aw*aw + ah*ah);
+  const tanH = tanDiag * aw / norm;
+  const tanV = tanDiag * ah / norm;
+  // G3 size = eyebox + 2·ER·tan(half-FOV)
+  const g3_w = ebW + 2 * ER * tanH;
+  const g3_h = ebH + 2 * ER * tanV;
+  g3_xMin = g3cx - g3_w/2;
+  g3_xMax = g3cx + g3_w/2;
+  g3_yMin = g3cy - g3_h/2;
+  g3_yMax = g3cy + g3_h/2;
+  // Eyebox: at z = -ER below G3 center, sized as W × H
+  eyeboxCx = g3cx;
+  eyeboxCy = g3cy;
+  eyeboxW = ebW;
+  eyeboxH = ebH;
+  eyeReliefMM = ER;
+
+  vG1cx.textContent = inCx; vG1cy.textContent = inCy;
+  vG2xa.textContent = g2_xMin; vG2xb.textContent = g2_xMax;
+  vG2ya.textContent = g2_yMin; vG2yb.textContent = g2_yMax;
+  vG3cx.textContent = g3cx; vG3cy.textContent = g3cy;
+  vER.textContent = ER;
+  vEbW.textContent = ebW;
+  vEbH.textContent = ebH;
+  vG3Size.textContent = `${g3_w.toFixed(1)} × ${g3_h.toFixed(1)} mm`;
+}
+
+// ===== 9-FOV CHECKBOX GRID =====
+const fovGrid = document.getElementById('fovGrid');
+const fovChecks = {}; // key "i_j" → checkbox
+function buildFovGrid() {
+  // Top row j=+1 (upper FOV), middle j=0, bottom j=-1
+  for (let jj = 1; jj >= -1; jj--) {
+    for (let ii = -1; ii <= 1; ii++) {
+      const lbl = document.createElement('label');
+      lbl.className = 'fov-cell';
+      lbl.title = `i=${ii>=0?'+':''}${ii}, j=${jj>=0?'+':''}${jj}`;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.addEventListener('change', draw);
+      const dot = document.createElement('span');
+      dot.className = 'cdot';
+      dot.style.background = rayColor(ii, jj);
+      lbl.appendChild(cb);
+      lbl.appendChild(dot);
+      fovGrid.appendChild(lbl);
+      fovChecks[`${ii}_${jj}`] = cb;
+    }
+  }
+}
+document.getElementById('btnAll').addEventListener('click', () => {
+  Object.values(fovChecks).forEach(cb => cb.checked = true); draw();
+});
+document.getElementById('btnNone').addEventListener('click', () => {
+  Object.values(fovChecks).forEach(cb => cb.checked = false); draw();
+});
+document.getElementById('btnCenter').addEventListener('click', () => {
+  Object.entries(fovChecks).forEach(([k, cb]) => cb.checked = (k === '0_0'));
+  draw();
+});
+
+// ===== VIEW PRESET BUTTONS =====
+function setActiveView(id) {
+  ['vPersp','vTop','vSide'].forEach(b => {
+    const el = document.getElementById(b);
+    if (el) el.classList.toggle('active', b === id);
+  });
+}
+
+// Auto fit-to-canvas: project waveguide+display bbox, set zoom and pan
+function fitToCanvas(margin) {
+  margin = margin || 0.85;
+  const dMM = parseFloat(sD.value);
+  // Bounding-box corners we want to fit. Include the incident beam start at z=-2.6
+  // so beams are visible below the waveguide.
+  const ER = parseFloat(sER.value);
+  const corners = [
+    [wgX0, wgY0, 0], [wgX1, wgY0, 0], [wgX1, wgY1, 0], [wgX0, wgY1, 0],
+    [wgX0, wgY0, dMM], [wgX1, wgY0, dMM], [wgX1, wgY1, dMM], [wgX0, wgY1, dMM],
+    [inCx, inCy, -2.6],
+    // include eyebox below waveguide so it stays in view
+    [wgX0, wgY0, -ER], [wgX1, wgY1, -ER]
+  ];
+  const cz = Math.cos(rotZ), sz = Math.sin(rotZ);
+  const cxr = Math.cos(rotX), sxr = Math.sin(rotX);
+  let minX1 = Infinity, maxX1 = -Infinity;
+  let minZ2 = Infinity, maxZ2 = -Infinity;
+  for (const c of corners) {
+    const x = c[0], y = c[1];
+    // Match projection's piecewise z-stretch
+    const z = (c[2] >= 0) ? (c[2] * zStretch) : c[2];
+    const x1 = x*cz - y*sz;
+    const y1 = x*sz + y*cz;
+    const z2 = y1*sxr + z*cxr;
+    if (x1 < minX1) minX1 = x1;
+    if (x1 > maxX1) maxX1 = x1;
+    if (z2 < minZ2) minZ2 = z2;
+    if (z2 > maxZ2) maxZ2 = z2;
+  }
+  const sceneW = (maxX1 - minX1) * baseScale;
+  const sceneH = (maxZ2 - minZ2) * baseScale;
+  if (sceneW > 0 && sceneH > 0) {
+    zoom = Math.min((W * margin) / sceneW, (H * margin) / sceneH);
+    const cenX1 = (minX1 + maxX1) / 2;
+    const cenZ2 = (minZ2 + maxZ2) / 2;
+    panX = -cenX1 * baseScale * zoom;
+    panY =  cenZ2 * baseScale * zoom;
+  }
+}
+
+document.getElementById('vPersp').addEventListener('click', () => {
+  rotX = -0.55; rotZ = 0.42;
+  setActiveView('vPersp'); fitToCanvas(); draw();
+});
+document.getElementById('vTop').addEventListener('click', () => {
+  rotX = -Math.PI/2 + 0.001; rotZ = 0;
+  setActiveView('vTop'); fitToCanvas(); draw();
+});
+document.getElementById('vSide').addEventListener('click', () => {
+  rotX = 0; rotZ = 0;
+  setActiveView('vSide'); fitToCanvas(); draw();
+});
+document.getElementById('vFit').addEventListener('click', () => {
+  fitToCanvas(); draw();
+});
+
+// ===== 3D ROTATION STATE =====
+let rotX = -0.55;     // tilt down (negative = look from above)
+let rotZ = 0.42;      // azimuth
+let zoom = 1.05;
+let panX = 0, panY = 0;  // canvas-pixel translation for fit-to-canvas
+let dragging = false, lastMX, lastMY;
+cv3d.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+cv3d.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  rotZ += (e.clientX - lastMX) * 0.008;
+  rotX += (e.clientY - lastMY) * 0.008;
+  rotX = Math.max(-Math.PI/2 + 0.05, Math.min(0, rotX));
+  lastMX = e.clientX; lastMY = e.clientY;
+  draw();
+});
+cv3d.addEventListener('mouseup', () => dragging = false);
+cv3d.addEventListener('mouseleave', () => dragging = false);
+cv3d.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom *= e.deltaY > 0 ? 0.93 : 1.07;
+  zoom = Math.max(0.4, Math.min(2.5, zoom));
+  draw();
+}, {passive:false});
+
+// ===== 3D PROJECTION =====
+// World coordinates: x along waveguide length (right), y across width (depth into page),
+// z vertical (up). Display sits below waveguide.
+// Visual scales (mm → world unit; vertical exaggerated for TIR clarity)
+const baseScale = 5.2;   // pixels per world unit (~horizontal)
+const zStretch = 8.0;    // vertical mm exaggeration inside waveguide (z>=0). Below z=0 uses real mm.
+                         // 0.5mm waveguide → 4 world units (TIR visible); 20mm ER → 20 units (much larger).
+
+const cxC = W * 0.42;
+const cyC = H * 0.6;
+
+function project(xMM, yMM, zMM) {
+  // x, y in real mm. z is exaggerated by zStretch ONLY inside the waveguide (z >= 0)
+  // so TIR is visible. Below the waveguide (z < 0), use real mm scale so eyebox /
+  // eye relief / out-coupled rays appear in correct proportion to xy dimensions.
+  let x = xMM, y = yMM;
+  let z = (zMM >= 0) ? (zMM * zStretch) : zMM;
+  // Rotate around z (azimuth)
+  const cz = Math.cos(rotZ), sz = Math.sin(rotZ);
+  let x1 = x*cz - y*sz;
+  let y1 = x*sz + y*cz;
+  let z1 = z;
+  // Rotate around x (tilt)
+  const cx = Math.cos(rotX), sx = Math.sin(rotX);
+  let y2 = y1*cx - z1*sx;
+  let z2 = y1*sx + z1*cx;
+  return {
+    px: cxC + panX + x1 * baseScale * zoom,
+    py: cyC + panY - z2 * baseScale * zoom,
+    depth: y2
+  };
+}
+
+// ===== 3D PRIMITIVES =====
+function line(x1,y1,z1, x2,y2,z2, color, width, dash) {
+  const a = project(x1,y1,z1), b = project(x2,y2,z2);
+  ctx.beginPath();
+  ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py);
+  ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  ctx.stroke();
+  if (dash) ctx.setLineDash([]);
+}
+function arrow(x1,y1,z1, x2,y2,z2, color, width) {
+  const a = project(x1,y1,z1), b = project(x2,y2,z2);
+  ctx.beginPath();
+  ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py);
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+  const ang = Math.atan2(b.py - a.py, b.px - a.px);
+  const hd = 8;
+  ctx.beginPath();
+  ctx.moveTo(b.px, b.py);
+  ctx.lineTo(b.px - hd*Math.cos(ang-0.35), b.py - hd*Math.sin(ang-0.35));
+  ctx.lineTo(b.px - hd*Math.cos(ang+0.35), b.py - hd*Math.sin(ang+0.35));
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+}
+function quad(verts, fill, stroke, lw) {
+  ctx.beginPath();
+  for (let i = 0; i < verts.length; i++) {
+    const p = project(verts[i][0], verts[i][1], verts[i][2]);
+    if (i === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+}
+function text(xMM, yMM, zMM, txt, color, font, align, ox, oy) {
+  const p = project(xMM, yMM, zMM);
+  ctx.fillStyle = color || '#1a1a1a';
+  ctx.font = font || '12px Arial';
+  ctx.textAlign = align || 'left';
+  ctx.fillText(txt, p.px + (ox||0), p.py + (oy||0));
+}
+
+// ===== WAVEGUIDE / LENS GEOMETRY (mm) =====
+// Lens shape: tilted superellipse with x-asymmetry vs. y (Microsoft-AR style)
+//   width(yL) = a · widthFactor(yL/b)   widthFactor: TOP_RATIO at top → 1.0 at bottom
+// Top of frame (yL < 0) is narrower than bottom — gives shield/teardrop profile.
+const inCsize = 4;                   // G1 ⌀4mm (fixed; small dot per reference)
+let lensA = 80, lensB = 50;           // bounding axes (slider-controlled)
+let lensCx = 40, lensCy = 0;          // lens center
+const LENS_N = 2.4;                   // superellipse exponent (rounded rectangle)
+const LENS_TILT = -0.08;              // tilt (rad) — slight CW (upper-left-heavy)
+const LENS_TOP_RATIO = 0.85;          // top width / bottom width (shield asymmetry)
+let wgX0 = 0, wgX1 = 80, wgY0 = -25, wgY1 = 25;
+
+function _widthFactor(yNorm) {
+  // yNorm in [-1, +1]: -1 at top, +1 at bottom of frame (yL convention)
+  // Linear blend: top=TOP_RATIO, bottom=1.0
+  const tBlend = (yNorm + 1) * 0.5;   // 0 at top → 1 at bottom
+  return LENS_TOP_RATIO + (1 - LENS_TOP_RATIO) * tBlend;
+}
+function lensCurve(t) {
+  const a = lensA/2, b = lensB/2;
+  const ct = Math.cos(t), st = Math.sin(t);
+  // y first (no x-scaling on y)
+  const yL = b * Math.sign(st) * Math.pow(Math.abs(st), 2/LENS_N);
+  const widthF = _widthFactor(yL/b);
+  const xL = a * widthF * Math.sign(ct) * Math.pow(Math.abs(ct), 2/LENS_N);
+  // Tilt rotation
+  const ca = Math.cos(LENS_TILT), sa = Math.sin(LENS_TILT);
+  return { x: lensCx + xL*ca - yL*sa, y: lensCy + xL*sa + yL*ca };
+}
+function inLensEllipse(x, y) {
+  // Inverse-rotate, then superellipse test using yL-dependent width
+  const dx = x - lensCx, dy = y - lensCy;
+  const ca = Math.cos(-LENS_TILT), sa = Math.sin(-LENS_TILT);
+  const xL = dx*ca - dy*sa, yL = dx*sa + dy*ca;
+  const a = lensA/2, b = lensB/2;
+  const yNorm = yL/b;
+  if (Math.abs(yNorm) > 1.0 + 1e-6) return false;
+  const widthF = _widthFactor(yNorm);
+  const u = xL/(a*widthF), v = yNorm;
+  return Math.pow(Math.abs(u), LENS_N) + Math.pow(Math.abs(v), LENS_N) <= 1.0 + 1e-6;
+}
+function lensBoundingBox() {
+  // Axis-aligned bounding box from sampling the parametric outline
+  let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+  for (let k = 0; k < 96; k++) {
+    const p = lensCurve((k/96) * Math.PI*2);
+    if (p.x < xMin) xMin = p.x; if (p.x > xMax) xMax = p.x;
+    if (p.y < yMin) yMin = p.y; if (p.y > yMax) yMax = p.y;
+  }
+  return { xMin, xMax, yMin, yMax };
+}
+// G1 / G2 / G3 positions are MUTABLE — read from sliders each draw().
+let inCx = 15, inCy = -17;
+let g2_xMin = 13, g2_xMax = 49, g2_yMin = -25, g2_yMax = -13;
+let g3_xMin = 21, g3_xMax = 37, g3_yMin = -12, g3_yMax = 0;
+
+// ===== FOV COLORS (3 colors per row) =====
+function rayColor(i, j) {
+  // i ∈ {-1,0,+1}: kx direction; j ∈ {-1,0,+1}: ky direction
+  let b;
+  if (i < 0)      b = { h: 0,   s: 75, l: 48 };  // red
+  else if (i > 0) b = { h: 215, s: 75, l: 45 };  // blue
+  else            b = { h: 30,  s: 85, l: 50 };  // orange (center)
+  const dl = j * 8;
+  return `hsl(${b.h}, ${b.s}%, ${b.l + dl}%)`;
+}
+
+// ===== MAIN DRAW =====
+function draw() {
+  updateLensBounds();
+  updateGratingPositions();
+  const fovDiagDeg = parseFloat(sFOV.value);
+  const aspStr = sAsp.value;
+  const [aw, ah] = aspStr.split(':').map(Number);
+  const nIdx = parseFloat(sN.value);
+  const lam = parseFloat(sLam.value);
+  const period = parseFloat(sP.value);
+  const grAngleDeg = parseFloat(sGA.value);
+  const period2 = parseFloat(sP2.value);
+  const grAngle2Deg = parseFloat(sGA2.value);
+  const period3 = parseFloat(sP3.value);
+  const grAngle3Deg = parseFloat(sGA3.value);
+  const beamMM = parseFloat(sBW.value);
+  const dMM = parseFloat(sD.value);
+
+  vFOV.textContent = fovDiagDeg;
+  vN.textContent = nIdx.toFixed(2);
+  vLam.textContent = lam;
+  vP.textContent = period;
+  vGA.textContent = grAngleDeg;
+  vP2.textContent = period2;
+  vGA2.textContent = grAngle2Deg;
+  vP3.textContent = period3;
+  vGA3.textContent = grAngle3Deg;
+  vBW.textContent = beamMM;
+  vD.textContent = dMM.toFixed(2);
+
+  // G1, G2, G3 vectors
+  const grAngle = grAngleDeg * Math.PI / 180;
+  const G = lam / period;
+  const Gx = G * Math.cos(grAngle);
+  const Gy = G * Math.sin(grAngle);
+  const grAngle2 = grAngle2Deg * Math.PI / 180;
+  const G2mag = lam / period2;
+  const G2x = G2mag * Math.cos(grAngle2);
+  const G2y = G2mag * Math.sin(grAngle2);
+  const grAngle3 = grAngle3Deg * Math.PI / 180;
+  const G3mag = lam / period3;
+  const G3x = G3mag * Math.cos(grAngle3);
+  const G3y = G3mag * Math.sin(grAngle3);
+
+  // FOV: 4:3 / diag
+  const tanDiag = Math.tan(fovDiagDeg/2 * Math.PI/180);
+  const norm = Math.sqrt(aw*aw + ah*ah);
+  const tanH = tanDiag * aw / norm;
+  const tanV = tanDiag * ah / norm;
+  const halfH = Math.atan(tanH);
+  const halfV = Math.atan(tanV);
+  const sinH = Math.sin(halfH);
+  const sinV = Math.sin(halfV);
+
+  // Build 9 samples
+  const samples9 = [];
+  for (let j = -1; j <= 1; j++) {
+    for (let i = -1; i <= 1; i++) {
+      const sx = i * sinH;
+      const sy = j * sinV;
+      const kxw = sx + Gx;
+      const kyw = sy + Gy;
+      const kperp2 = kxw*kxw + kyw*kyw;
+      const kz_wg2 = nIdx*nIdx - kperp2;
+      const propagates = kz_wg2 > 0;
+      const kz_wg = propagates ? Math.sqrt(kz_wg2) : 0;
+      const tirOK = kperp2 > 1.0 + 1e-6;
+      samples9.push({ i, j, sx, sy, kxw, kyw, kz_wg, kperp2, propagates, tirOK,
+                      color: rayColor(i, j) });
+    }
+  }
+
+  // Filter by FOV checkbox state
+  const displayed = samples9.filter(s => {
+    const cb = fovChecks[`${s.i}_${s.j}`];
+    return cb && cb.checked;
+  });
+
+  // Info
+  let html = `<b>FOV ${fovDiagDeg}°/${aspStr}</b> θ_h=±${(halfH*180/Math.PI).toFixed(1)}° θ_v=±${(halfV*180/Math.PI).toFixed(1)}°<br>`;
+  html += `<b>|G1|</b>=${G.toFixed(2)}@${grAngleDeg}° <b>|G2|</b>=${G2mag.toFixed(2)}@${grAngle2Deg}° <b>|G3|</b>=${G3mag.toFixed(2)}@${grAngle3Deg}°<br>`;
+  const sumGx = Gx+G2x+G3x, sumGy = Gy+G2y+G3y;
+  const sumGmag = Math.sqrt(sumGx*sumGx + sumGy*sumGy);
+  html += `<b>|G1+G2+G3|</b>=${sumGmag.toFixed(2)} ${sumGmag<0.05?'✓ 閉合':'(未閉合)'}<br>`;
+  html += `<b>n·k₀</b>=${nIdx.toFixed(2)} TIR 臨界 = ${(Math.asin(1/nIdx)*180/Math.PI).toFixed(1)}°<br>`;
+  let nProp = 0, nTIR = 0;
+  for (const s of samples9) { if (s.propagates) nProp++; if (s.propagates && s.tirOK) nTIR++; }
+  html += `<br>9 fields: 進入 ${nProp}/9 · TIR ${nTIR}/9<br>`;
+  const c = samples9[4];
+  if (c.propagates) {
+    const θwg = Math.atan2(Math.sqrt(c.kperp2), c.kz_wg) * 180/Math.PI;
+    html += `中心 ray θ_wg = <b>${θwg.toFixed(1)}°</b>`;
+  }
+  info.innerHTML = html;
+
+  draw3D(nIdx, dMM, beamMM, displayed, samples9, sinH, sinV, Gx, Gy, G2x, G2y, G3x, G3y, period, period2, period3, lam);
+  drawKxKy(nIdx, sinH, sinV, Gx, Gy, G2x, G2y, G3x, G3y, samples9);
+}
+
+// ===== 3D SCENE =====
+function draw3D(n, dMM, beamMM, displayed, all9, sinH, sinV, Gx, Gy, G2x, G2y, G3x, G3y, period, period2, period3, lam) {
+  ctx.clearRect(0, 0, W, H);
+
+  // Light page background with subtle tint so we know canvas is alive
+  ctx.fillStyle = '#fbfcfd';
+  ctx.fillRect(0, 0, W, H);
+
+  // 1) Coordinate axes (small) at bottom-left of canvas
+  drawAxesGuide();
+
+  // 2) Lens outline (eyeglass-lens superellipse) — BOTTOM face (z=0), TOP face (z=d), curved sides
+  function drawLensEllipse(z, fill, stroke, lw) {
+    const N = 96;
+    ctx.beginPath();
+    for (let k = 0; k <= N; k++) {
+      const lp = lensCurve((k/N) * Math.PI*2);
+      const p = project(lp.x, lp.y, z);
+      if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+    }
+    ctx.closePath();
+    if (fill)   { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw||1; ctx.stroke(); }
+  }
+  // Bottom face (back-most) — light tinted, dark gray border (per Microsoft AR ref)
+  drawLensEllipse(0, 'rgba(220,228,236,0.55)', '#3a4654', 1.8);
+  // Curved side surface — vertical sample lines along the eyeglass lens curve
+  const NSide = 36;
+  for (let k = 0; k < NSide; k++) {
+    const lp = lensCurve((k/NSide) * Math.PI*2);
+    line(lp.x, lp.y, 0, lp.x, lp.y, dMM, '#5a6878', 0.55);
+  }
+  // Top face (in front of side lines)
+  drawLensEllipse(dMM, 'rgba(232,238,244,0.35)', '#4a5664', 1.4);
+
+  // 5) Three grating regions on bottom face
+  drawAllGratings(period, period2, period3);
+
+  // 5b) EPE envelope — 4 red dashed lines bounding optimal G2 region
+  if (cbEpeEnv && cbEpeEnv.checked) {
+    drawEpeEnvelope(all9, G2x, G2y);
+  }
+  // 5c) Eye marker on lens at eyebox center XY (z=0)
+  drawEyeMarkerOnLens();
+
+  // 6) (Display panel removed — beams come in from below already collimated)
+
+  // 7) Trace the rays
+  const rayDraws = [];
+  for (const s of displayed) {
+    if (!s.propagates) continue;
+    rayDraws.push({ sample: s, depth: s.j * 0.5 + s.i * 0.1 });
+  }
+
+  // Draw incident beams first (under waveguide)
+  for (const rd of rayDraws) drawIncidentBeam(rd.sample, beamMM, dMM);
+  // Then in-waveguide multi-grating TIR
+  for (const rd of rayDraws) drawWaveguideMultiGrating(rd.sample, dMM, beamMM, n, G2x, G2y, G3x, G3y);
+
+  // 8) Labels & annotations
+  ctx.fillStyle = '#1a3a6a';
+  ctx.font = 'bold 13px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('3D Ray Tracing — G1 (in) → TIR → G2 (EPE) → TIR → G3 (out)', 14, 22);
+  ctx.fillStyle = '#5a6a7a';
+  ctx.font = '11px Arial';
+  ctx.fillText('Z = 厚度 (放大顯示) | X = 沿波導 | Y = 寬度', 14, 38);
+
+  // Waveguide label
+  text(wgX1 - 2, wgY1, dMM + 0.05, `波導 n=${n.toFixed(2)}`, '#3a4a5a', 'bold 12px Arial', 'right', 0, -4);
+  text(wgX1 - 2, wgY1, 0, `d = ${dMM.toFixed(2)} mm`, '#3a4a5a', '11px Arial', 'right', 0, 16);
+
+  // X-axis tick at 50mm to give scale
+  const tickXmm = 50;
+  if (tickXmm < wgX1) {
+    line(tickXmm, wgY1 + 1, 0, tickXmm, wgY1 + 3, 0, '#888', 1);
+    text(tickXmm, wgY1 + 4, 0, `${tickXmm} mm`, '#888', '9px Arial', 'center', 0, 14);
+  }
+}
+
+function drawAxesGuide() {
+  ctx.save();
+  const ax = 55, ay = H - 75;
+  const armLen = 28;
+  // Hide an axis if its actual projected magnitude on screen is below this threshold —
+  // happens when the axis is roughly perpendicular to the view (e.g. z in top view).
+  const visibleThresh = 4;
+
+  const o  = project(0, 0, 0);
+  // Sample inputs sized so each axis projects to similar best-case magnitude on screen.
+  const ex = project(2, 0, 0);
+  const ey = project(0, 2, 0);
+  const ez = project(0, 0, 2 / zStretch);  // compensate zStretch so best-case ≈ x/y best-case
+
+  function unitTo(p) {
+    const dx = p.px - o.px, dy = p.py - o.py;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < visibleThresh) return null;
+    return { x: dx/d * armLen, y: dy/d * armLen };
+  }
+  const xV = unitTo(ex);
+  const yV = unitTo(ey);
+  const zV = unitTo(ez);
+
+  function arrow2(x1, y1, x2, y2, color, label) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 6*Math.cos(ang - 0.35), y2 - 6*Math.sin(ang - 0.35));
+    ctx.lineTo(x2 - 6*Math.cos(ang + 0.35), y2 - 6*Math.sin(ang + 0.35));
+    ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, x2 + 4, y2 + 3);
+  }
+  if (xV) arrow2(ax, ay, ax + xV.x, ay + xV.y, '#c8741c', 'x');
+  if (yV) arrow2(ax, ay, ax + yV.x, ay + yV.y, '#3a78c8', 'y');
+  if (zV) arrow2(ax, ay, ax + zV.x, ay + zV.y, '#3aa84a', 'z');
+
+  // For axes that point ~into/out of screen, draw a small "dot" at origin labeled with the axis name
+  function dotLabel(visible, color, label, dx) {
+    if (visible) return;
+    ctx.beginPath();
+    ctx.arc(ax, ay, 4, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, ax + 6 + dx, ay + 4);
+  }
+  // Stack them in the legend area below origin
+  let legendY = ay + 18;
+  function noteAxis(visible, color, label) {
+    if (visible) return;
+    ctx.fillStyle = color;
+    ctx.font = '10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('· ' + label + ' ⊥ 螢幕', ax - 4, legendY);
+    legendY += 12;
+  }
+  noteAxis(xV, '#c8741c', 'x');
+  noteAxis(yV, '#3a78c8', 'y');
+  noteAxis(zV, '#3aa84a', 'z');
+  ctx.restore();
+}
+
+function drawAllGratings(period, period2, period3) {
+  // ---- G1: small navy circle on bottom face (Microsoft AR ref color) ----
+  const r = inCsize / 2;
+  const N = 48;
+  ctx.beginPath();
+  for (let k = 0; k <= N; k++) {
+    const a = (k/N) * Math.PI*2;
+    const p = project(inCx + r*Math.cos(a), inCy + r*Math.sin(a), 0.001);
+    if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(28,40,72,0.85)';
+  ctx.fill();
+  ctx.strokeStyle = '#1a2848';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  text(inCx, inCy + r + 0.4, 0, `G1 ⌀${inCsize}mm Λ=${period}nm`, '#1a2848', 'bold 10px Arial', 'center', 0, 12);
+
+  // ---- G2: rectangle on bottom face (orange/brown EPE per Microsoft ref) ----
+  quad([
+    [g2_xMin, g2_yMin, 0.001], [g2_xMax, g2_yMin, 0.001],
+    [g2_xMax, g2_yMax, 0.001], [g2_xMin, g2_yMax, 0.001]
+  ], 'rgba(196,118,40,0.32)', '#a85820', 1.5);
+  text((g2_xMin+g2_xMax)/2, g2_yMin - 0.5, 0, `G2 EPE Λ=${period2}nm`, '#a85820', 'bold 10px Arial', 'center', 0, -2);
+
+  // ---- G3: rectangle on bottom face (light teal per Microsoft ref) ----
+  quad([
+    [g3_xMin, g3_yMin, 0.001], [g3_xMax, g3_yMin, 0.001],
+    [g3_xMax, g3_yMax, 0.001], [g3_xMin, g3_yMax, 0.001]
+  ], 'rgba(120,180,210,0.32)', '#2080a8', 1.5);
+  text((g3_xMin+g3_xMax)/2, g3_yMax + 0.5, 0, `G3 out-coupler Λ=${period3}nm`, '#2080a8', 'bold 10px Arial', 'center', 0, 14);
+
+  // ---- Eyebox plane (z = -ER) ----
+  const ebZ = -eyeReliefMM;
+  // Solid filled rectangle at the eyebox plane
+  quad([
+    [eyeboxCx - eyeboxW/2, eyeboxCy - eyeboxH/2, ebZ],
+    [eyeboxCx + eyeboxW/2, eyeboxCy - eyeboxH/2, ebZ],
+    [eyeboxCx + eyeboxW/2, eyeboxCy + eyeboxH/2, ebZ],
+    [eyeboxCx - eyeboxW/2, eyeboxCy + eyeboxH/2, ebZ]
+  ], 'rgba(228,140,40,0.30)', '#d07020', 2.4);
+
+  // Eyebox label — pill background for legibility (works in any view mode)
+  {
+    const p = project(eyeboxCx, eyeboxCy, ebZ);
+    ctx.save();
+    ctx.font = 'bold 13px Arial';
+    const txt = `Eyebox ${eyeboxW}×${eyeboxH} mm`;
+    const tw = ctx.measureText(txt).width;
+    const offY = 22;  // shift label below the eyebox plane projection
+    const bx = p.px - tw/2 - 6, by = p.py + offY - 11, bw = tw + 12, bh = 18;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = '#d07020'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4);
+    else ctx.rect(bx, by, bw, bh);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#a04010'; ctx.textAlign = 'center';
+    ctx.fillText(txt, p.px, p.py + offY + 3);
+    ctx.restore();
+  }
+
+  // ---- Eye relief (ER) dimension annotation — bold double-arrow + label ----
+  const annoX = g3_xMax + 4;          // x position to the right of G3
+  const annoY = eyeboxCy;              // any y; in side view doesn't affect canvas
+  {
+    const pTop = project(annoX, annoY, 0);
+    const pBot = project(annoX, annoY, ebZ);
+    ctx.save();
+    ctx.strokeStyle = '#1a3a6a'; ctx.fillStyle = '#1a3a6a';
+    ctx.lineWidth = 1.8;
+    // Vertical line
+    ctx.beginPath(); ctx.moveTo(pTop.px, pTop.py); ctx.lineTo(pBot.px, pBot.py); ctx.stroke();
+    // Double-headed arrows
+    const ang = Math.atan2(pBot.py - pTop.py, pBot.px - pTop.px);
+    const hd = 7;
+    function head(at, sign) {
+      ctx.beginPath();
+      ctx.moveTo(at.px, at.py);
+      ctx.lineTo(at.px - sign*hd*Math.cos(ang - 0.35), at.py - sign*hd*Math.sin(ang - 0.35));
+      ctx.lineTo(at.px - sign*hd*Math.cos(ang + 0.35), at.py - sign*hd*Math.sin(ang + 0.35));
+      ctx.closePath(); ctx.fill();
+    }
+    head(pTop, +1); head(pBot, -1);
+    // Tick marks at both ends (extend left)
+    ctx.beginPath();
+    ctx.moveTo(pTop.px - 8, pTop.py); ctx.lineTo(pTop.px + 4, pTop.py);
+    ctx.moveTo(pBot.px - 8, pBot.py); ctx.lineTo(pBot.px + 4, pBot.py);
+    ctx.lineWidth = 1; ctx.stroke();
+    // Label with white pill at midpoint
+    const midX = (pTop.px + pBot.px) / 2 + 8;
+    const midY = (pTop.py + pBot.py) / 2 + 4;
+    ctx.font = 'bold 13px Arial';
+    const txt = `ER = ${eyeReliefMM} mm`;
+    const tw = ctx.measureText(txt).width;
+    const bx = midX - 3, by = midY - 13, bw = tw + 8, bh = 18;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = '#1a3a6a'; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4);
+    else ctx.rect(bx, by, bw, bh);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1a3a6a'; ctx.textAlign = 'left';
+    ctx.fillText(txt, midX + 1, midY + 2);
+    ctx.restore();
+  }
+
+  // ---- FOV cone from G3 corners to eyebox corners (4 lines) ----
+  ctx.save();
+  ctx.setLineDash([3, 3]);
+  const corners = [
+    [[g3_xMin, g3_yMin], [eyeboxCx - eyeboxW/2, eyeboxCy - eyeboxH/2]],
+    [[g3_xMax, g3_yMin], [eyeboxCx + eyeboxW/2, eyeboxCy - eyeboxH/2]],
+    [[g3_xMax, g3_yMax], [eyeboxCx + eyeboxW/2, eyeboxCy + eyeboxH/2]],
+    [[g3_xMin, g3_yMax], [eyeboxCx - eyeboxW/2, eyeboxCy + eyeboxH/2]]
+  ];
+  for (const [g, e] of corners) {
+    line(g[0], g[1], 0, e[0], e[1], ebZ, 'rgba(208,112,32,0.5)', 1);
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ===== EPE ENVELOPE — 4 red dashed lines bounding optimal G2 region =====
+// Lines 1, 2: from G1 along extreme post-G1 in-plane propagation (forward).
+// Lines 3, 4: from G3 along extreme post-G2 in-plane propagation (backward).
+// The bounded region = where G2 must lie so every FOV reaches the eyebox.
+function rayLensExitT(x0, y0, dx, dy) {
+  // Numerical search: find t > 0 where ray exits the lens.
+  // Handles starts both inside and (just barely) outside the lens.
+  const tMax = Math.max(lensA, lensB) * 1.5;
+  const step = tMax / 200;
+  let entered = inLensEllipse(x0, y0);
+  let prevIn = entered;
+  let lastT = 0;
+  for (let t = step; t <= tMax; t += step) {
+    const inNow = inLensEllipse(x0 + t*dx, y0 + t*dy);
+    if (!entered && inNow) entered = true;
+    if (entered && prevIn && !inNow) {
+      let lo = t - step, hi = t;
+      for (let k = 0; k < 14; k++) {
+        const m = (lo + hi) / 2;
+        if (inLensEllipse(x0 + m*dx, y0 + m*dy)) lo = m; else hi = m;
+      }
+      return (lo + hi) / 2;
+    }
+    prevIn = inNow;
+    lastT = t;
+  }
+  return lastT;
+}
+
+function drawEpeEnvelope(samples9, G2x, G2y) {
+  // Use only propagating samples
+  const props = samples9.filter(s => s.propagates);
+  if (props.length < 2) return;
+
+  // Pre-G2 angles (from G1, in xy plane after m=+1 diffraction)
+  let minPre = Infinity, maxPre = -Infinity;
+  let preMin = null, preMax = null;
+  for (const s of props) {
+    const a = Math.atan2(s.kyw, s.kxw);
+    if (a < minPre) { minPre = a; preMin = s; }
+    if (a > maxPre) { maxPre = a; preMax = s; }
+  }
+
+  // Post-G2 angles (in xy plane after m=+1 at G2 — direction G2→G3)
+  let minPost = Infinity, maxPost = -Infinity;
+  let postMin = null, postMax = null;
+  for (const s of props) {
+    const kxp = s.kxw + G2x, kyp = s.kyw + G2y;
+    const a = Math.atan2(kyp, kxp);
+    if (a < minPost) { minPost = a; postMin = s; }
+    if (a > maxPost) { maxPost = a; postMax = s; }
+  }
+  if (!preMin || !preMax || !postMin || !postMax) return;
+
+  // ---- Lines 1, 2 from G1's UPPER/LOWER EDGE (perpendicular offset to direction) ----
+  // Bounding rays of the beam exiting G1 — emerge from circle perimeter at points
+  // perpendicular to the propagation direction so they bound the cone's silhouette.
+  const ZE = 0.002;  // slightly above bottom face
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = '#d8262a';
+  ctx.lineWidth = 1.8;
+
+  function fwdFromG1Edge(s, perpSide) {
+    const dx = s.kxw, dy = s.kyw;
+    const norm = Math.sqrt(dx*dx + dy*dy);
+    if (norm < 1e-6) return null;
+    const ux = dx/norm, uy = dy/norm;
+    const r = inCsize / 2;
+    const perpX = -uy * perpSide, perpY = ux * perpSide;
+    const sx0 = inCx + r * perpX;
+    const sy0 = inCy + r * perpY;
+    const t = rayLensExitT(sx0, sy0, ux, uy);
+    const x2 = sx0 + t*ux, y2 = sy0 + t*uy;
+    line(sx0, sy0, ZE, x2, y2, ZE, '#d8262a', 1.8);
+    return { sx: sx0, sy: sy0, x: x2, y: y2 };
+  }
+  // preMax (down-right extreme): bound from G1's lower (CCW perp = +1) edge
+  // preMin (up-right extreme):   bound from G1's upper (CW perp = -1) edge
+  const L1 = fwdFromG1Edge(preMax, +1);
+  const L2 = fwdFromG1Edge(preMin, -1);
+
+  // ---- Lines 3, 4 BACKWARD FROM G3 CORNERS along reversed post-G2 directions ----
+  // Each line starts at the G3 rectangle corner most "perpendicularly offset" from
+  // the back-trace direction (one side per line so they diverge in the lens body).
+  function backFromG3Corner(s, perpSide) {
+    const kxp = s.kxw + G2x, kyp = s.kyw + G2y;
+    const norm = Math.sqrt(kxp*kxp + kyp*kyp);
+    if (norm < 1e-6) return null;
+    const ux = -kxp/norm, uy = -kyp/norm;          // backward
+    const perpX = -uy * perpSide, perpY = ux * perpSide;
+    const corners = [
+      [g3_xMin, g3_yMin], [g3_xMax, g3_yMin],
+      [g3_xMin, g3_yMax], [g3_xMax, g3_yMax]
+    ];
+    const cxC = (g3_xMin + g3_xMax)/2, cyC = (g3_yMin + g3_yMax)/2;
+    let best = corners[0], bestDot = -Infinity;
+    for (const c of corners) {
+      const d = (c[0]-cxC)*perpX + (c[1]-cyC)*perpY;
+      if (d > bestDot) { bestDot = d; best = c; }
+    }
+    const sx0 = best[0], sy0 = best[1];
+    const t = rayLensExitT(sx0, sy0, ux, uy);
+    const x2 = sx0 + t*ux, y2 = sy0 + t*uy;
+    line(sx0, sy0, ZE, x2, y2, ZE, '#d8262a', 1.8);
+    return { sx: sx0, sy: sy0, x: x2, y: y2 };
+  }
+  const L3 = backFromG3Corner(postMax, +1);
+  const L4 = backFromG3Corner(postMin, -1);
+
+  ctx.setLineDash([]);
+
+  // ---- Numeric labels 1, 2, 3, 4 with white pill ----
+  function labelAt(xMM, yMM, txt) {
+    const p = project(xMM, yMM, ZE);
+    ctx.save();
+    ctx.font = 'bold 12px Arial';
+    const tw = ctx.measureText(txt).width;
+    const r = 9;
+    ctx.beginPath();
+    ctx.arc(p.px, p.py, r, 0, Math.PI*2);
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#d8262a';
+    ctx.lineWidth = 1.5;
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d8262a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(txt, p.px, p.py + 1);
+    ctx.restore();
+  }
+  // Place each label near 70% along its line
+  function midPoint(x1, y1, x2, y2, frac) {
+    return { x: x1 + frac*(x2-x1), y: y1 + frac*(y2-y1) };
+  }
+  if (L1) { const m = midPoint(L1.sx, L1.sy, L1.x, L1.y, 0.55); labelAt(m.x, m.y, '1'); }
+  if (L2) { const m = midPoint(L2.sx, L2.sy, L2.x, L2.y, 0.55); labelAt(m.x, m.y, '2'); }
+  if (L3) { const m = midPoint(L3.sx, L3.sy, L3.x, L3.y, 0.55); labelAt(m.x, m.y, '3'); }
+  if (L4) { const m = midPoint(L4.sx, L4.sy, L4.x, L4.y, 0.55); labelAt(m.x, m.y, '4'); }
+
+  ctx.restore();
+}
+
+// ===== EYE MARKER ON LENS =====
+// Marks the lens point directly above the eyebox center (eye-position projection).
+// Drawn as a small "eye" icon (concentric circles) + label.
+function drawEyeMarkerOnLens() {
+  const ex = eyeboxCx, ey = eyeboxCy, ez = 0.005; // just above bottom face
+  const p = project(ex, ey, ez);
+  // Connector dashed line: lens point ↔ eyebox center
+  const ebZ = -eyeReliefMM;
+  ctx.save();
+  ctx.setLineDash([2, 3]);
+  line(ex, ey, ez, ex, ey, ebZ, 'rgba(160,64,16,0.55)', 1);
+  ctx.setLineDash([]);
+
+  // Eye icon — concentric rings + pupil dot
+  ctx.beginPath();
+  ctx.arc(p.px, p.py, 8, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.strokeStyle = '#a04010';
+  ctx.lineWidth = 1.6;
+  ctx.fill(); ctx.stroke();
+  // Iris ring
+  ctx.beginPath();
+  ctx.arc(p.px, p.py, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#d07020';
+  ctx.fill();
+  // Pupil
+  ctx.beginPath();
+  ctx.arc(p.px, p.py, 2.2, 0, Math.PI*2);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fill();
+  // Label
+  ctx.font = 'bold 10.5px Arial';
+  ctx.fillStyle = '#a04010';
+  ctx.textAlign = 'left';
+  ctx.fillText('眼位 (對應 Eyebox 中心)', p.px + 12, p.py + 4);
+  ctx.restore();
+}
+
+
+// ===== HELPERS for cylindrical beam =====
+// Draw a HORIZONTAL circle (in xy plane at z = cz) — avoids zStretch artifact
+function drawHorizontalCircle(cx, cy, cz, r, color, fillAlpha, strokeAlpha) {
+  const N = 36;
+  ctx.save();
+  ctx.beginPath();
+  for (let k = 0; k <= N; k++) {
+    const a = (k/N) * Math.PI*2;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    const p = project(x, y, cz);
+    if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  if (fillAlpha > 0) {
+    ctx.fillStyle = color;
+    ctx.globalAlpha = fillAlpha;
+    ctx.fill();
+  }
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = strokeAlpha;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ===== INCIDENT BEAM (round 4mm cylinder, xy-plane circle footprint) =====
+function drawIncidentBeam(s, beamMM, dMM) {
+  const col = s.color;
+  const sx = s.sx, sy = s.sy;
+  const kz_air = Math.sqrt(Math.max(0, 1 - sx*sx - sy*sy));
+  if (kz_air <= 0) return;
+  const startZ = -2.6;
+  const t = -startZ / kz_air;
+  const xStart = inCx - sx * t;
+  const yStart = inCy - sy * t;
+  const r = beamMM / 2;
+
+  // Cap circles — drawn flat in xy plane (clean 4mm round, no z-stretch artifact)
+  drawHorizontalCircle(xStart, yStart, startZ, r, col, 0.10, 0.7);
+  drawHorizontalCircle(inCx, inCy, 0, r, col, 0.10, 0.7);
+
+  // Dense edge rays around the full circumference of the round beam.
+  // Each edge ray is parallel to the beam, offset by (r·cosθ, r·sinθ, 0).
+  const NEdges = 24;
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 0.7;
+  for (let k = 0; k < NEdges; k++) {
+    const ang = (k / NEdges) * Math.PI * 2;
+    const ox = r * Math.cos(ang);
+    const oy = r * Math.sin(ang);
+    line(xStart + ox, yStart + oy, startZ,
+         inCx + ox,    inCy + oy,    0, col, 0.7);
+  }
+  ctx.restore();
+
+  // Center ray (solid, arrowhead at grating)
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+  arrow(xStart, yStart, startZ, inCx, inCy, 0, col, 2.0);
+  ctx.restore();
+}
+
+// ===== MULTI-GRATING RAY TRACER =====
+// Returns { path: [...{x,y,z,stage,bounce,event}], escape: bool, escapeAt: {...} }
+// Stage 0 = after G1 (initial), 1 = after G2 m=+1, 2 = after G3 m=+1
+// At each BOTTOM (z=0) hit, check if (x,y) is in the next target grating's region.
+// If yes → diffract m=+1; otherwise pure TIR (kz flips).
+function inG2Region(x, y) {
+  return x >= g2_xMin && x <= g2_xMax && y >= g2_yMin && y <= g2_yMax;
+}
+function inG3Region(x, y) {
+  return x >= g3_xMin && x <= g3_xMax && y >= g3_yMin && y <= g3_yMax;
+}
+
+// ===== FULL BRANCHING TRACER =====
+// Every grating-region bottom-face hit splits into:
+//   - m=+1: spawn a NEW branch with k+G (queued)
+//   - m=0:  current branch continues TIR (kz flips)
+// Each branch traces independently. Recursion bounded by MAX_DEPTH.
+// Returns { branches: [{ spawnAt, depth, kx, ky, kz, path, escapes }] }
+function traceMultiGrating(x0, y0, z0, kx, ky, kz, dMM, n, G2x, G2y, G3x, G3y) {
+  const branches = [];
+  const queue = [{ x:x0, y:y0, z:z0, kx, ky, kz, depth:0, parent:-1, spawnAt:null }];
+  const MAX_DEPTH = 3;
+  const MAX_BRANCHES = 16;
+
+  while (queue.length > 0 && branches.length < MAX_BRANCHES) {
+    const job = queue.shift();
+    if (job.depth > MAX_DEPTH) continue;
+
+    const path = [{ x:job.x, y:job.y, z:job.z }];
+    const escapes = [];
+    let x = job.x, y = job.y, z = job.z;
+    let kxw = job.kx, kyw = job.ky, kzw = job.kz;
+    let ux = kxw/n, uy = kyw/n, uz = kzw/n;
+    let safety = 0;
+
+    while (safety < 1200) {
+      safety++;
+      let cs = [];
+      if (uz > 1e-9)      { const t = (dMM - z)/uz; if (t>1e-7) cs.push({t, kind:'top'}); }
+      else if (uz < -1e-9){ const t = (0 - z)/uz;   if (t>1e-7) cs.push({t, kind:'bot'}); }
+      if (ux > 1e-9)      { const t = (wgX1 - x)/ux; if (t>1e-7) cs.push({t, kind:'wallX1'}); }
+      else if (ux < -1e-9){ const t = (wgX0 - x)/ux; if (t>1e-7) cs.push({t, kind:'wallX0'}); }
+      if (uy > 1e-9)      { const t = (wgY1 - y)/uy; if (t>1e-7) cs.push({t, kind:'wallY1'}); }
+      else if (uy < -1e-9){ const t = (wgY0 - y)/uy; if (t>1e-7) cs.push({t, kind:'wallY0'}); }
+      cs.sort((a,b)=>a.t-b.t);
+      if (cs.length === 0) break;
+      const next = cs[0];
+      x += ux*next.t; y += uy*next.t; z += uz*next.t;
+
+      if (next.kind === 'bot') {
+        let interacted = false;
+
+        // ---- G2 hit (regardless of depth) ----
+        if (inG2Region(x, y)) {
+          const newKx = kxw + G2x, newKy = kyw + G2y;
+          const kp2 = newKx*newKx + newKy*newKy;
+          if (kp2 < 1 - 1e-6) {
+            // Unusual: G2 m=+1 escape
+            escapes.push({ x, y, z, kx_air:newKx, ky_air:newKy,
+                           kz_air:-Math.sqrt(1-kp2), src:'G2' });
+            path.push({ x, y, z, event:'G2 escape' });
+          } else if (kp2 < n*n - 1e-6 && job.depth < MAX_DEPTH && branches.length + queue.length < MAX_BRANCHES) {
+            // Spawn m=+1 sub-branch
+            queue.push({ x, y, z, kx:newKx, ky:newKy, kz:Math.sqrt(n*n - kp2),
+                         depth:job.depth+1, parent:branches.length,
+                         spawnAt:{x, y, z, src:'G2'} });
+            path.push({ x, y, z, event:'G2 split' });
+          } else {
+            path.push({ x, y, z, event:'G2 evanescent' });
+          }
+          interacted = true;
+        }
+
+        // ---- G3 hit ----
+        if (inG3Region(x, y)) {
+          const newKx = kxw + G3x, newKy = kyw + G3y;
+          const kp2 = newKx*newKx + newKy*newKy;
+          if (kp2 < 1 - 1e-6) {
+            // Escape to air
+            escapes.push({ x, y, z, kx_air:newKx, ky_air:newKy,
+                           kz_air:-Math.sqrt(1-kp2), src:'G3' });
+            path.push({ x, y, z, event:'G3 escape' });
+          } else if (kp2 < n*n - 1e-6 && job.depth < MAX_DEPTH && branches.length + queue.length < MAX_BRANCHES) {
+            // Continues in waveguide with new direction → new branch
+            queue.push({ x, y, z, kx:newKx, ky:newKy, kz:Math.sqrt(n*n - kp2),
+                         depth:job.depth+1, parent:branches.length,
+                         spawnAt:{x, y, z, src:'G3'} });
+            path.push({ x, y, z, event:'G3 split' });
+          } else {
+            path.push({ x, y, z, event:'G3 evanescent' });
+          }
+          interacted = true;
+        }
+
+        // m=0: ALWAYS continues TIR (kz flips), regardless of grating interaction
+        if (!interacted) {
+          path.push({ x, y, z, bounce:true });
+        }
+        uz = -uz;
+        continue;
+      }
+      if (next.kind === 'top') {
+        path.push({ x, y, z, bounce:true });
+        uz = -uz;
+        continue;
+      }
+      // wall hit
+      path.push({ x, y, z, event:'wall_exit' });
+      break;
+    }
+
+    branches.push({
+      depth: job.depth,
+      parent: job.parent,
+      spawnAt: job.spawnAt,
+      kx: job.kx, ky: job.ky, kz: job.kz,
+      path, escapes
+    });
+  }
+  return { branches };
+}
+
+function drawWaveguideMultiGrating(s, dMM, beamMM, n, G2x, G2y, G3x, G3y) {
+  const col = s.color;
+  const r = beamMM / 2;
+
+  // Trace from beam center
+  const result = traceMultiGrating(inCx, inCy, 0,
+                                   s.kxw, s.kyw, s.kz_wg, dMM, n,
+                                   G2x, G2y, G3x, G3y);
+  // Always draw ALL branches (full physics: every G2/G3 split is traced).
+  // Filtering only happens at the escape-arrow level: arrows are drawn only if
+  // the ray lands within the eyebox at z = -ER. Branches whose escapes all miss
+  // the eyebox still have their TIR paths visible — just no out-coupling arrows.
+  const branches = result.branches;
+  function escapeReachesEyebox(e) {
+    if (e.kz_air >= -1e-6) return false;
+    const t = -eyeReliefMM / e.kz_air;
+    const xEye = e.x + e.kx_air * t;
+    const yEye = e.y + e.ky_air * t;
+    return Math.abs(xEye - eyeboxCx) <= eyeboxW/2 + 1e-6 &&
+           Math.abs(yEye - eyeboxCy) <= eyeboxH/2 + 1e-6;
+  }
+
+  // Cylindrical "halo" — fewer edge rays + only depth-0 + depth-1 for performance
+  const NEdges = 8;
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.13;
+  ctx.lineWidth = 0.6;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let k = 0; k < NEdges; k++) {
+    const ang = (k / NEdges) * Math.PI * 2;
+    const ox = r * Math.cos(ang);
+    const oy = r * Math.sin(ang);
+    const er = traceMultiGrating(inCx + ox, inCy + oy, 0,
+                                 s.kxw, s.kyw, s.kz_wg, dMM, n,
+                                 G2x, G2y, G3x, G3y);
+    for (const br of er.branches) {
+      if (br.depth > 1) continue;  // halo only for shallow branches (perf)
+      ctx.beginPath();
+      for (let i = 0; i < br.path.length; i++) {
+        const p = project(br.path[i].x, br.path[i].y, br.path[i].z);
+        if (i === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // ---- Draw each branch with depth-based style ----
+  // depth 0 = solid bold; depth 1 = dashed; depth 2 = dotted; depth 3+ = thin dotted
+  const dashPerDepth = [[], [5,3], [2,3], [1,3]];
+  const widthPerDepth = [2.0, 1.6, 1.2, 0.9];
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let bi = 0; bi < branches.length; bi++) {
+    const br = branches[bi];
+    const dp = Math.min(br.depth, 3);
+    const alphaBr = Math.max(0.25, 0.95 * Math.pow(0.82, br.depth));
+    ctx.globalAlpha = alphaBr;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = widthPerDepth[dp];
+    ctx.setLineDash(dashPerDepth[dp]);
+    ctx.beginPath();
+    for (let k = 0; k < br.path.length; k++) {
+      const p = project(br.path[k].x, br.path[k].y, br.path[k].z);
+      if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // bounce dots
+    for (let k = 1; k < br.path.length; k++) {
+      if (br.path[k].bounce) {
+        const p = project(br.path[k].x, br.path[k].y, br.path[k].z);
+        ctx.fillStyle = col; ctx.globalAlpha = alphaBr * 0.55;
+        ctx.beginPath(); ctx.arc(p.px, p.py, br.depth === 0 ? 2 : 1.5, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+
+  // ---- Grating split / escape markers ----
+  ctx.save();
+  for (const br of branches) {
+    for (let k = 1; k < br.path.length; k++) {
+      const ev = br.path[k].event;
+      if (!ev) continue;
+      const p = project(br.path[k].x, br.path[k].y, br.path[k].z);
+      if (ev === 'G2 split') {
+        ctx.fillStyle = '#c8741c'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+        ctx.fillRect(p.px - 3.5, p.py - 3.5, 7, 7);
+        ctx.strokeRect(p.px - 3.5, p.py - 3.5, 7, 7);
+      } else if (ev === 'G3 escape') {
+        ctx.fillStyle = '#22a2c8'; ctx.strokeStyle = '#000'; ctx.lineWidth = 0.7;
+        ctx.fillRect(p.px - 2.5, p.py - 2.5, 5, 5);
+        ctx.strokeRect(p.px - 2.5, p.py - 2.5, 5, 5);
+      } else if (ev === 'G3 split') {
+        // hollow cyan circle (less common — G3 staying in waveguide)
+        ctx.strokeStyle = '#22a2c8'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(p.px, p.py, 3, 0, Math.PI*2); ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+
+  // ---- Out-coupling arrows — ONLY rays that reach eyebox ----
+  // For each escape (going down with kz_air<0), check where it crosses z=-ER:
+  //   x_eye = e.x + e.kx_air * t, y_eye = e.y + e.ky_air * t,  with t = -ER / e.kz_air
+  // Keep only escapes whose (x_eye, y_eye) lies within eyebox area.
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let bi = 0; bi < branches.length; bi++) {
+    const br = branches[bi];
+    const branchAlpha = Math.max(0.25, 0.95 * Math.pow(0.82, br.depth));
+    let kept = 0;
+    for (let ei = 0; ei < br.escapes.length; ei++) {
+      const e = br.escapes[ei];
+      if (e.kz_air >= -1e-6) continue;  // must go down
+      const t = -eyeReliefMM / e.kz_air;
+      const xEye = e.x + e.kx_air * t;
+      const yEye = e.y + e.ky_air * t;
+      if (Math.abs(xEye - eyeboxCx) > eyeboxW/2 + 1e-6) continue;
+      if (Math.abs(yEye - eyeboxCy) > eyeboxH/2 + 1e-6) continue;
+      // Reaches eyebox — draw the full ray from G3 to eyebox plane
+      const a = branchAlpha * Math.pow(0.88, kept);
+      ctx.globalAlpha = Math.max(0.20, a);
+      arrow(e.x, e.y, e.z, xEye, yEye, -eyeReliefMM, col, 1.7);
+      // small dot at landing point inside eyebox
+      const p = project(xEye, yEye, -eyeReliefMM);
+      ctx.beginPath();
+      ctx.arc(p.px, p.py, 2.5, 0, Math.PI*2);
+      ctx.fillStyle = col;
+      ctx.fill();
+      kept++;
+    }
+  }
+  ctx.restore();
+}
+
+// ===== K-SPACE TOP VIEW (small panel) =====
+function drawKxKy(n, sinH, sinV, Gx, Gy, G2x, G2y, G3x, G3y, samples) {
+  const W2 = cvK.width, H2 = cvK.height;
+  const cx = W2/2, cy = H2/2;
+  const c = ctxK;
+  c.clearRect(0, 0, W2, H2);
+  c.fillStyle = '#ffffff';
+  c.fillRect(0, 0, W2, H2);
+
+  c.fillStyle = '#1a3a6a';
+  c.font = 'bold 12px Arial';
+  c.textAlign = 'center';
+  c.fillText('kx–ky 上視圖 — G1 → G2 → G3', cx, 14);
+
+  const G12x = Gx + G2x, G12y = Gy + G2y;
+  const G123x = G12x + G3x, G123y = G12y + G3y;
+  const reach = Math.max(
+    Math.hypot(Gx, Gy), Math.hypot(G12x, G12y), Math.hypot(G123x, G123y)
+  ) + sinH;
+  const maxR = Math.max(n, reach) + 0.2;
+  const sc = Math.min(W2, H2-30) * 0.42 / maxR;
+
+  // Axes
+  c.strokeStyle = '#bbb'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(15, cy); c.lineTo(W2-15, cy); c.stroke();
+  c.beginPath(); c.moveTo(cx, 22); c.lineTo(cx, H2-12); c.stroke();
+  c.fillStyle = '#888'; c.font = 'italic 10px Arial';
+  c.textAlign = 'left'; c.fillText('kx', W2-22, cy-3);
+  c.textAlign = 'center'; c.fillText('ky', cx+10, 32);
+
+  // TIR annulus
+  c.save();
+  c.fillStyle = 'rgba(255,180,180,0.20)';
+  c.beginPath();
+  c.arc(cx, cy, n*sc, 0, Math.PI*2);
+  c.arc(cx, cy, sc, 0, Math.PI*2, true);
+  c.closePath(); c.fill();
+  c.restore();
+
+  // Air circle
+  c.strokeStyle = '#3a78c8'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(cx, cy, sc, 0, Math.PI*2); c.stroke();
+  c.fillStyle = '#3a78c8'; c.font = '9px Arial';
+  c.textAlign = 'left'; c.fillText('k₀', cx + sc + 2, cy - 2);
+
+  // nk₀ circle
+  c.strokeStyle = '#c8741c'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(cx, cy, n*sc, 0, Math.PI*2); c.stroke();
+  c.fillStyle = '#c8741c';
+  c.fillText('nk₀', cx + n*sc + 2, cy - 2);
+
+  // FOV box (incident)
+  c.strokeStyle = '#3aa84a'; c.lineWidth = 1.3;
+  c.fillStyle = 'rgba(58,168,74,0.10)';
+  c.fillRect(cx - sinH*sc, cy - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([3,2]);
+  c.strokeRect(cx - sinH*sc, cy - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([]);
+  c.fillStyle = '#3aa84a'; c.font = 'bold 9px Arial'; c.textAlign = 'center';
+  c.fillText('FOV', cx, cy + sinV*sc + 11);
+
+  // FOV+G1 box
+  c.strokeStyle = '#c8741c';
+  c.fillStyle = 'rgba(200,116,28,0.10)';
+  c.fillRect(cx + Gx*sc - sinH*sc, cy - Gy*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeRect(cx + Gx*sc - sinH*sc, cy - Gy*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.fillStyle = '#c8741c'; c.font = 'bold 9px Arial'; c.textAlign = 'center';
+  c.fillText('+G1', cx + Gx*sc, cy - Gy*sc + sinV*sc + 10);
+
+  // FOV+G1+G2 box
+  c.strokeStyle = '#aa55aa';
+  c.fillStyle = 'rgba(170,85,170,0.10)';
+  c.setLineDash([4,3]);
+  c.fillRect(cx + G12x*sc - sinH*sc, cy - G12y*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeRect(cx + G12x*sc - sinH*sc, cy - G12y*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([]);
+  c.fillStyle = '#aa55aa';
+  c.fillText('+G2', cx + G12x*sc, cy - G12y*sc + sinV*sc + 10);
+
+  // FOV+G1+G2+G3 box (final, should ≈ original FOV if loop closes)
+  c.strokeStyle = '#22a2c8';
+  c.fillStyle = 'rgba(34,162,200,0.10)';
+  c.setLineDash([5,3]);
+  c.fillRect(cx + G123x*sc - sinH*sc, cy - G123y*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeRect(cx + G123x*sc - sinH*sc, cy - G123y*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([]);
+  c.fillStyle = '#22a2c8';
+  c.fillText('+G3', cx + G123x*sc, cy - G123y*sc + sinV*sc + 10);
+
+  // Helper for drawing a small arrow segment in 2D
+  function arr(x1, y1, x2, y2, color, lw) {
+    c.strokeStyle = color; c.lineWidth = lw;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+    const ang = Math.atan2(y2-y1, x2-x1);
+    const hd = 5;
+    c.beginPath();
+    c.moveTo(x2, y2);
+    c.lineTo(x2 - hd*Math.cos(ang-0.35), y2 - hd*Math.sin(ang-0.35));
+    c.lineTo(x2 - hd*Math.cos(ang+0.35), y2 - hd*Math.sin(ang+0.35));
+    c.closePath(); c.fillStyle = color; c.fill();
+  }
+  // G1 arrow (green)
+  arr(cx, cy, cx + Gx*sc, cy - Gy*sc, '#3aa84a', 1.6);
+  c.fillStyle = '#3aa84a'; c.fillText('G1', cx + Gx*sc*0.5 + 4, cy - Gy*sc*0.5 - 4);
+  // G2 arrow (orange) chained
+  arr(cx + Gx*sc, cy - Gy*sc, cx + G12x*sc, cy - G12y*sc, '#c8741c', 1.5);
+  c.fillStyle = '#c8741c'; c.fillText('G2', cx + (Gx+G12x)*0.5*sc + 4, cy - (Gy+G12y)*0.5*sc - 4);
+  // G3 arrow (cyan) chained
+  arr(cx + G12x*sc, cy - G12y*sc, cx + G123x*sc, cy - G123y*sc, '#22a2c8', 1.5);
+  c.fillStyle = '#22a2c8'; c.fillText('G3', cx + (G12x+G123x)*0.5*sc + 4, cy - (G12y+G123y)*0.5*sc - 4);
+
+  // 9 sample points (incident)
+  for (const s of samples) {
+    const px = cx + s.sx*sc, py = cy - s.sy*sc;
+    const px2 = cx + s.kxw*sc, py2 = cy - s.kyw*sc;
+    c.fillStyle = s.color;
+    c.beginPath(); c.arc(px, py, 2.5, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(px2, py2, 4, 0, Math.PI*2); c.fill();
+    if (!s.tirOK || !s.propagates) {
+      c.strokeStyle = '#d22'; c.lineWidth = 1;
+      c.beginPath(); c.arc(px2, py2, 6, 0, Math.PI*2); c.stroke();
+    }
+  }
+}
+
+// init
+buildFovGrid();
+setActiveView('vPersp');
+fitToCanvas();
+draw();
+</script>
+</body>
+</html>

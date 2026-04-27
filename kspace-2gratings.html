@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>2 Gratings (G1 in-coupler + G2 EPE) — 9 fields × m=0,+1</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a1a; color:#e0e0e0; font-family:'Segoe UI',Arial,sans-serif; margin:0; min-height:100vh; display:flex; flex-direction:column; }
+h1 { text-align:center; padding:6px 0 2px; font-size:15px; color:#7eb8ff; letter-spacing:1px; flex-shrink:0; }
+.wrap { display:flex; justify-content:center; gap:8px; padding:2px 8px 6px; flex:1; align-items:flex-start; min-height:0; flex-wrap:wrap; }
+canvas { border:1px solid #334; border-radius:8px; background:#0d0d22; }
+#cv3d { cursor:grab; }
+#cv3d:active { cursor:grabbing; }
+.col2d { display:flex; flex-direction:column; gap:4px; }
+.panel { background:#151530; border:1px solid #334; border-radius:10px; padding:8px 12px; width:220px; flex-shrink:0; overflow-y:auto; font-size:11px; max-height:calc(100vh - 50px); }
+.panel h2 { font-size:13px; color:#7eb8ff; margin-bottom:6px; border-bottom:1px solid #335; padding-bottom:4px; }
+.row { margin-bottom:6px; }
+.row label { display:block; font-size:11px; color:#99b; margin-bottom:1px; }
+.row .val { float:right; color:#ffd866; font-weight:bold; font-size:11px; }
+input[type=range] { width:100%; accent-color:#5588cc; }
+select { width:100%; padding:3px; background:#1a1a3a; color:#e0e0e0; border:1px solid #335; border-radius:4px; font-size:11px; }
+.info { background:#1a1a3a; border:1px solid #335; border-radius:8px; padding:6px 8px; margin-top:6px; font-size:10.5px; line-height:1.5; }
+.info b { color:#ffd866; }
+.legend { margin-top:8px; font-size:10.5px; }
+.legend div { display:flex; align-items:center; gap:5px; margin:1.5px 0; }
+.legend .swatch { width:14px; height:4px; border-radius:2px; flex-shrink:0; }
+.legend .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.br-view-btns { display:flex; gap:3px; }
+.br-view-btns button { flex:1; padding:4px 3px; font-size:10px; background:#1a3055; color:#cfd6e6; border:1px solid #2a4575; border-radius:3px; cursor:pointer; }
+.br-view-btns button:hover { background:#264478; }
+.br-view-btns button.br-active { background:#c8741c; border-color:#c8741c; color:#fff; font-weight:600; }
+.fov-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:3px; padding:4px; background:#1a1a3a; border:1px solid #335; border-radius:4px; }
+.fov-cell { display:flex; align-items:center; justify-content:center; gap:3px; padding:3px 2px; background:#0d0d22; border:1px solid #335; border-radius:3px; cursor:pointer; user-select:none; font-size:9px; }
+.fov-cell:hover { background:#1f1f3f; }
+.fov-cell input { margin:0; cursor:pointer; }
+.fov-cell .cdot { width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.fov-btns { display:flex; gap:3px; margin-top:4px; }
+.fov-btns button { flex:1; padding:3px 4px; font-size:10px; background:#2a2a55; color:#cfd6e6; border:1px solid #335; border-radius:3px; cursor:pointer; }
+.fov-btns button:hover { background:#3a3a6a; }
+</style>
+</head>
+<body>
+<h1>2-Grating K-Space (G1 In-coupler + G2 EPE) — 9 fields × m=0, m=+1</h1>
+<div class="wrap">
+<canvas id="cv3d" width="500" height="540"></canvas>
+<div class="panel">
+  <h2>參數控制</h2>
+  <div class="row">
+    <label>對角 FOV (&deg;) <span class="val" id="vFOV">30</span></label>
+    <input type="range" id="sFOV" min="10" max="50" step="1" value="30">
+  </div>
+  <div class="row">
+    <label>Aspect Ratio</label>
+    <select id="sAsp">
+      <option value="4:3" selected>4:3</option>
+      <option value="16:9">16:9</option>
+      <option value="3:2">3:2</option>
+      <option value="1:1">1:1</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>n (波導) <span class="val" id="vN">1.75</span></label>
+    <input type="range" id="sN" min="1.4" max="2.2" step="0.01" value="1.75">
+  </div>
+  <div class="row">
+    <label>&lambda; (nm) <span class="val" id="vLam">532</span></label>
+    <input type="range" id="sLam" min="380" max="780" step="5" value="532">
+  </div>
+  <div class="row">
+    <label>G1 &Lambda;<sub>1</sub> (nm) <span class="val" id="vP">385</span></label>
+    <input type="range" id="sP" min="200" max="700" step="5" value="385">
+  </div>
+  <div class="row">
+    <label>G1 &phi;<sub>1</sub> (&deg;) <span class="val" id="vGA">0</span></label>
+    <input type="range" id="sGA" min="-180" max="180" step="1" value="0">
+  </div>
+  <div class="row" style="border-top:1px solid #335; padding-top:6px;">
+    <label>G2 &Lambda;<sub>2</sub> (nm) <span class="val" id="vP2">385</span></label>
+    <input type="range" id="sP2" min="200" max="700" step="5" value="385">
+  </div>
+  <div class="row">
+    <label>G2 &phi;<sub>2</sub> (&deg;) <span class="val" id="vGA2">120</span></label>
+    <input type="range" id="sGA2" min="-180" max="180" step="1" value="120">
+  </div>
+  <div class="row">
+    <label>光束寬 (mm) <span class="val" id="vBW">4</span></label>
+    <input type="range" id="sBW" min="1" max="10" step="0.5" value="4">
+  </div>
+  <div class="row">
+    <label>波導厚 d (mm) <span class="val" id="vD">0.5</span></label>
+    <input type="range" id="sD" min="0.3" max="2.0" step="0.05" value="0.5">
+  </div>
+  <div class="row" style="display:flex; align-items:center; gap:6px;">
+    <input type="checkbox" id="cbKArrows" checked style="cursor:pointer;">
+    <label for="cbKArrows" style="margin:0; cursor:pointer; font-size:11px;">畫繞射 K 向量箭頭 (top view)</label>
+  </div>
+  <div class="row">
+    <label>顯示 FOV (3×3 取樣)</label>
+    <div class="fov-grid" id="fovGrid"></div>
+    <div class="fov-btns">
+      <button id="btnFovAll">全選</button>
+      <button id="btnFovNone">全清</button>
+      <button id="btnFovCenter">僅中心</button>
+    </div>
+  </div>
+  <div class="row">
+    <label>右下 3D 突顯 field</label>
+    <select id="sFocusField">
+      <option value="4" selected>中心 (0,0)</option>
+      <option value="0">左下 (-1,-1)</option>
+      <option value="1">下中 (0,-1)</option>
+      <option value="2">右下 (+1,-1)</option>
+      <option value="3">左中 (-1,0)</option>
+      <option value="5">右中 (+1,0)</option>
+      <option value="6">左上 (-1,+1)</option>
+      <option value="7">上中 (0,+1)</option>
+      <option value="8">右上 (+1,+1)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>右下 3D 視角</label>
+    <div class="br-view-btns">
+      <button id="brSync" class="br-active">同主圖</button>
+      <button id="brTop">上視 xy</button>
+      <button id="brSide">側視 xz</button>
+    </div>
+  </div>
+  <div class="info" id="info">…</div>
+  <div class="legend">
+    <div><span class="swatch" style="background:#44cc44"></span> G1 (in-coupler)</div>
+    <div><span class="swatch" style="background:#cc44cc"></span> G2 (EPE / 第二光柵)</div>
+    <div><span class="swatch" style="background:#88ff66"></span> FOV 入射 box (4:3)</div>
+    <div><span class="swatch" style="background:#ff8844"></span> FOV+G1 (波導內 m=+1)</div>
+    <div><span class="swatch" style="background:#cc66dd"></span> FOV+G1+G2 (G2 m=+1)</div>
+    <div><span class="dot" style="background:#ff5566"></span> 9 取樣點</div>
+    <div><span class="swatch" style="background:rgba(255,255,255,0.5)"></span> Air k₀</div>
+    <div><span class="swatch" style="background:rgba(220,170,60,0.7)"></span> Waveguide nk₀</div>
+    <div style="margin-top:6px;font-size:10px;color:#aab;">G2 m=+1 結果：</div>
+    <div><span class="swatch" style="background:#88ff66"></span> 進入空氣 (escape)</div>
+    <div><span class="swatch" style="background:#ffcc44"></span> 仍 TIR 在波導</div>
+    <div><span class="swatch" style="background:#888"></span> 消逝 (evanescent)</div>
+  </div>
+</div>
+<div class="col2d">
+  <canvas id="cvTop" width="380" height="320"></canvas>
+  <canvas id="cvSide" width="380" height="280"></canvas>
+</div>
+</div>
+
+<script>
+// ========== ELEMENTS ==========
+const cv3d = document.getElementById('cv3d');
+const ctx3 = cv3d.getContext('2d');
+const W = cv3d.width, H = cv3d.height;
+
+const cvTop = document.getElementById('cvTop');
+const ctxT = cvTop.getContext('2d');
+const cvSide = document.getElementById('cvSide');
+const ctxS = cvSide.getContext('2d');
+
+const sFOV = document.getElementById('sFOV');
+const sAsp = document.getElementById('sAsp');
+// G2 controls
+const sP2  = document.getElementById('sP2');
+const sGA2 = document.getElementById('sGA2');
+const vP2  = document.getElementById('vP2');
+const vGA2 = document.getElementById('vGA2');
+const sN   = document.getElementById('sN');
+const sLam = document.getElementById('sLam');
+const sP   = document.getElementById('sP');
+const sGA  = document.getElementById('sGA');
+const sBW  = document.getElementById('sBW');
+const sD   = document.getElementById('sD');
+const vFOV = document.getElementById('vFOV');
+const vN   = document.getElementById('vN');
+const vLam = document.getElementById('vLam');
+const vP   = document.getElementById('vP');
+const vGA  = document.getElementById('vGA');
+const vBW  = document.getElementById('vBW');
+const vD   = document.getElementById('vD');
+const info = document.getElementById('info');
+const cbKArrows   = document.getElementById('cbKArrows');
+const sFocusField = document.getElementById('sFocusField');
+
+[sFOV, sAsp, sN, sLam, sP, sGA, sP2, sGA2, sBW, sD].forEach(s => s.addEventListener('input', draw));
+cbKArrows.addEventListener('change', draw);
+sFocusField.addEventListener('change', draw);
+
+// ===== 9-FOV CHECKBOX GRID =====
+const fovGridEl = document.getElementById('fovGrid');
+const fovChecks = {};
+function buildFovGrid() {
+  // Top row j=+1, middle j=0, bottom j=-1 (matches visual FOV layout)
+  for (let jj = 1; jj >= -1; jj--) {
+    for (let ii = -1; ii <= 1; ii++) {
+      const lbl = document.createElement('label');
+      lbl.className = 'fov-cell';
+      lbl.title = `(${ii>=0?'+':''}${ii}, ${jj>=0?'+':''}${jj})`;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.addEventListener('change', draw);
+      const dot = document.createElement('span');
+      dot.className = 'cdot';
+      dot.style.background = fovColor(ii, jj);
+      lbl.appendChild(cb);
+      lbl.appendChild(dot);
+      fovGridEl.appendChild(lbl);
+      fovChecks[`${ii}_${jj}`] = cb;
+    }
+  }
+}
+document.getElementById('btnFovAll').addEventListener('click', () => {
+  Object.values(fovChecks).forEach(cb => cb.checked = true); draw();
+});
+document.getElementById('btnFovNone').addEventListener('click', () => {
+  Object.values(fovChecks).forEach(cb => cb.checked = false); draw();
+});
+document.getElementById('btnFovCenter').addEventListener('click', () => {
+  Object.entries(fovChecks).forEach(([k, cb]) => cb.checked = (k === '0_0'));
+  draw();
+});
+function isFovEnabled(s) {
+  const cb = fovChecks[`${s.i}_${s.j}`];
+  return !cb || cb.checked;
+}
+
+// ===== BOTTOM-RIGHT 3D VIEW MODE =====
+// 'sync' = follow main 3D rotation; 'top' = xy plane (looking down); 'side' = xz plane
+let brViewMode = 'sync';
+function setBRView(mode) {
+  brViewMode = mode;
+  ['brSync', 'brTop', 'brSide'].forEach(id => {
+    const want = (id === 'brSync' && mode === 'sync')
+              || (id === 'brTop'  && mode === 'top')
+              || (id === 'brSide' && mode === 'side');
+    document.getElementById(id).classList.toggle('br-active', want);
+  });
+  draw();
+}
+document.getElementById('brSync').addEventListener('click', () => setBRView('sync'));
+document.getElementById('brTop' ).addEventListener('click', () => setBRView('top'));
+document.getElementById('brSide').addEventListener('click', () => setBRView('side'));
+
+// ========== 3D ROTATION STATE ==========
+// Default = standard isometric K-space view: +kx → lower-right, +ky → upper-right, +kz → up.
+// (Matches the y-up convention used by the right-side kx-ky 2D top view so the
+//  9 colored dots appear at consistent screen positions in both views.)
+let rotX = 0.5;    // pitch (+ : look from above-back so world +y projects UP on canvas)
+let rotZ = -0.5;   // azimuth
+let zoom = 1.0;
+let dragging = false, lastMX, lastMY;
+cv3d.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+cv3d.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  rotZ += (e.clientX - lastMX) * 0.008;
+  rotX -= (e.clientY - lastMY) * 0.008;  // drag UP increases rotX (tilts more toward top-down)
+  rotX = Math.max(-Math.PI/4, Math.min(Math.PI/2 - 0.05, rotX));
+  lastMX = e.clientX; lastMY = e.clientY;
+  draw();
+});
+cv3d.addEventListener('mouseup', () => dragging = false);
+cv3d.addEventListener('mouseleave', () => dragging = false);
+cv3d.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom *= e.deltaY > 0 ? 0.93 : 1.07;
+  zoom = Math.max(0.4, Math.min(2.5, zoom));
+  draw();
+}, {passive: false});
+
+// ========== 3D HELPERS ==========
+const cx3 = W / 2, cy3 = H / 2;
+const baseScale = Math.min(W, H) * 0.34;
+
+function project(x, y, z) {
+  const cz = Math.cos(rotZ), sz = Math.sin(rotZ);
+  const x1 = x * cz - y * sz;
+  const y1 = x * sz + y * cz;
+  const z1 = z;
+  const cxr = Math.cos(rotX), sxr = Math.sin(rotX);
+  const y2 = y1 * cxr - z1 * sxr;
+  const z2 = y1 * sxr + z1 * cxr;
+  const s = baseScale * zoom;
+  return { px: cx3 + x1 * s, py: cy3 - z2 * s, depth: y2 };
+}
+
+function line3D(x1,y1,z1, x2,y2,z2, color, width, dash, alpha) {
+  const a = project(x1,y1,z1), b = project(x2,y2,z2);
+  ctx3.save();
+  if (alpha != null) ctx3.globalAlpha = alpha;
+  ctx3.beginPath(); ctx3.moveTo(a.px, a.py); ctx3.lineTo(b.px, b.py);
+  ctx3.strokeStyle = color; ctx3.lineWidth = width;
+  if (dash) ctx3.setLineDash(dash);
+  ctx3.stroke();
+  ctx3.restore();
+}
+
+function arrow3D(x1,y1,z1, x2,y2,z2, color, width) {
+  const a = project(x1,y1,z1), b = project(x2,y2,z2);
+  ctx3.beginPath(); ctx3.moveTo(a.px, a.py); ctx3.lineTo(b.px, b.py);
+  ctx3.strokeStyle = color; ctx3.lineWidth = width; ctx3.stroke();
+  const ang = Math.atan2(b.py - a.py, b.px - a.px);
+  const hd = 8 * zoom;
+  ctx3.beginPath();
+  ctx3.moveTo(b.px, b.py);
+  ctx3.lineTo(b.px - hd * Math.cos(ang - 0.35), b.py - hd * Math.sin(ang - 0.35));
+  ctx3.lineTo(b.px - hd * Math.cos(ang + 0.35), b.py - hd * Math.sin(ang + 0.35));
+  ctx3.closePath(); ctx3.fillStyle = color; ctx3.fill();
+}
+
+function dot3D(x, y, z, color, r) {
+  const p = project(x, y, z);
+  ctx3.beginPath(); ctx3.arc(p.px, p.py, r, 0, Math.PI*2);
+  ctx3.fillStyle = color; ctx3.fill();
+}
+
+function text3D(x, y, z, txt, color, font, align, ox, oy) {
+  const p = project(x, y, z);
+  ctx3.fillStyle = color; ctx3.font = font || 'bold 12px Arial';
+  ctx3.textAlign = align || 'left';
+  ctx3.fillText(txt, p.px + (ox||0), p.py + (oy||0));
+}
+
+function ellipseAtZ(oz, r, color, width, alpha) {
+  const N = 72;
+  ctx3.save();
+  if (alpha != null) ctx3.globalAlpha = alpha;
+  ctx3.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const a = (i/N) * Math.PI*2;
+    const p = project(r*Math.cos(a), r*Math.sin(a), oz);
+    if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+  }
+  ctx3.strokeStyle = color; ctx3.lineWidth = width; ctx3.stroke();
+  ctx3.restore();
+}
+
+// Draw an arc on a sphere of radius r along a great circle in the plane y=tanφ·x (for longitude φ)
+function greatCircle(r, lonRad, color, width, alpha) {
+  const N = 72;
+  ctx3.save();
+  if (alpha != null) ctx3.globalAlpha = alpha;
+  ctx3.beginPath();
+  const cl = Math.cos(lonRad), sl = Math.sin(lonRad);
+  for (let i = 0; i <= N; i++) {
+    const a = (i/N) * Math.PI*2;
+    const x = r * Math.cos(a) * cl;
+    const y = r * Math.cos(a) * sl;
+    const z = r * Math.sin(a);
+    const p = project(x, y, z);
+    if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+  }
+  ctx3.strokeStyle = color; ctx3.lineWidth = width; ctx3.stroke();
+  ctx3.restore();
+}
+
+// Draw upper hemisphere wireframe (z >= 0)
+function hemisphere(r, color, alpha) {
+  // latitude rings (z = r*sin(lat))
+  for (let lat = 15; lat <= 75; lat += 15) {
+    const t = lat * Math.PI / 180;
+    ellipseAtZ(r*Math.sin(t), r*Math.cos(t), color, 0.6, alpha);
+  }
+  // longitude semicircles (upper half only)
+  const N = 36;
+  for (let lon = 0; lon < 360; lon += 30) {
+    const cl = Math.cos(lon*Math.PI/180), sl = Math.sin(lon*Math.PI/180);
+    ctx3.save();
+    ctx3.globalAlpha = alpha;
+    ctx3.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = (i/N) * Math.PI; // 0 to PI = upper half
+      const p = project(r*Math.cos(a)*cl, r*Math.cos(a)*sl, r*Math.sin(a));
+      if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+    }
+    ctx3.strokeStyle = color; ctx3.lineWidth = 0.6; ctx3.stroke();
+    ctx3.restore();
+  }
+}
+
+function gratingPlane(grAngle) {
+  const sz = 1.4;
+  const corners = [[-sz,-sz,0],[sz,-sz,0],[sz,sz,0],[-sz,sz,0]];
+  const pts = corners.map(c => project(c[0], c[1], c[2]));
+  ctx3.beginPath();
+  ctx3.moveTo(pts[0].px, pts[0].py);
+  for (let i = 1; i < 4; i++) ctx3.lineTo(pts[i].px, pts[i].py);
+  ctx3.closePath();
+  ctx3.fillStyle = 'rgba(180,200,230,0.10)';
+  ctx3.fill();
+  ctx3.strokeStyle = 'rgba(180,200,230,0.25)';
+  ctx3.lineWidth = 1; ctx3.stroke();
+  // grating lines
+  const cg = Math.cos(grAngle), sg = Math.sin(grAngle);
+  ctx3.globalAlpha = 0.18;
+  for (let i = -12; i <= 12; i++) {
+    const off = i * 0.1;
+    const ox = off * cg, oy = off * sg;
+    const lx = sg, ly = -cg;
+    line3D(ox - lx*0.95, oy - ly*0.95, 0, ox + lx*0.95, oy + ly*0.95, 0, '#8899bb', 0.6);
+  }
+  ctx3.globalAlpha = 1;
+}
+
+// ========== FOV COLORS ==========
+// 9 colors mapped to 3x3 (i,j) where i,j ∈ {-1,0,+1}
+// Center (0,0) = white; corners = primary colors; edges = mixes
+function fovColor(i, j) {
+  if (i === 0 && j === 0) return '#ffffff';
+  // Hue around the FOV box from the center
+  const ang = Math.atan2(j, i);
+  const hue = ((ang + Math.PI) / (2*Math.PI)) * 360;
+  return `hsl(${hue.toFixed(0)}, 85%, 62%)`;
+}
+
+// ========== MAIN DRAW ==========
+function draw() {
+  const fovDiagDeg = parseFloat(sFOV.value);
+  const aspStr = sAsp.value;
+  const [aw, ah] = aspStr.split(':').map(Number);
+  const nIdx = parseFloat(sN.value);
+  const lam = parseFloat(sLam.value);
+  const period = parseFloat(sP.value);
+  const grAngleDeg = parseFloat(sGA.value);
+  const period2 = parseFloat(sP2.value);
+  const grAngle2Deg = parseFloat(sGA2.value);
+  const beamMM = parseFloat(sBW.value);
+  const dMM = parseFloat(sD.value);
+
+  vFOV.textContent = fovDiagDeg;
+  vN.textContent = nIdx.toFixed(2);
+  vLam.textContent = lam;
+  vP.textContent = period;
+  vGA.textContent = grAngleDeg;
+  vP2.textContent = period2;
+  vGA2.textContent = grAngle2Deg;
+  vBW.textContent = beamMM;
+  vD.textContent = dMM.toFixed(2);
+
+  const grAngle = grAngleDeg * Math.PI / 180;
+  const G = lam / period;
+  const Gx = G * Math.cos(grAngle);
+  const Gy = G * Math.sin(grAngle);
+
+  // G2: second grating
+  const grAngle2 = grAngle2Deg * Math.PI / 180;
+  const G2mag = lam / period2;
+  const G2x = G2mag * Math.cos(grAngle2);
+  const G2y = G2mag * Math.sin(grAngle2);
+
+  // FOV: 4:3 / diagonal 30° → tan(θ_h)/tan(θ_v) = aw/ah, tan²θ_h+tan²θ_v=tan²(diag/2)
+  const tanDiag = Math.tan(fovDiagDeg/2 * Math.PI/180);
+  const norm = Math.sqrt(aw*aw + ah*ah);
+  const tanH = tanDiag * aw / norm;
+  const tanV = tanDiag * ah / norm;
+  const halfH = Math.atan(tanH);
+  const halfV = Math.atan(tanV);
+  const sinH = Math.sin(halfH);
+  const sinV = Math.sin(halfV);
+
+  // 9 FOV samples (sx, sy) in air-side k-space
+  const samples = [];
+  for (let j = -1; j <= 1; j++) {
+    for (let i = -1; i <= 1; i++) {
+      const sx = i * sinH;
+      const sy = j * sinV;
+      // air kz (incident going UP)
+      const kz_air2 = 1 - sx*sx - sy*sy;
+      const kz_air = kz_air2 > 0 ? Math.sqrt(kz_air2) : 0;
+      // Stage 1: After G1 +1 (in-coupled into waveguide)
+      const kxw = sx + Gx;
+      const kyw = sy + Gy;
+      const kperp2 = kxw*kxw + kyw*kyw;
+      const kz_wg2 = nIdx*nIdx - kperp2;
+      const propagates = kz_wg2 > 0;
+      const kz_wg = propagates ? Math.sqrt(kz_wg2) : 0;
+      const tirOK = kperp2 > 1.0 + 1e-6; // can't escape back to air
+
+      // Stage 2: After G2 +1 (acting on the waveguide-side k vector)
+      // m=0 of G2 just keeps (kxw, kyw) — TIR continues unchanged.
+      // m=+1 of G2 shifts by (G2x, G2y).
+      const kx2 = kxw + G2x;
+      const ky2 = kyw + G2y;
+      const kperp2_2 = kx2*kx2 + ky2*ky2;
+      // Possible outcomes:
+      //   kperp2_2 < 1            → escape to air (refracts out, kz_air2 = 1 − kperp2_2)
+      //   1 ≤ kperp2_2 < n²       → continues TIR in waveguide (kz_wg_new)
+      //   kperp2_2 ≥ n²           → evanescent (no propagation in wg)
+      let stage2State;
+      let kz2_air = 0, kz2_wg = 0;
+      if (kperp2_2 < 1 - 1e-6) {
+        stage2State = 'escape';
+        kz2_air = Math.sqrt(1 - kperp2_2);
+      } else if (kperp2_2 < nIdx*nIdx - 1e-6) {
+        stage2State = 'tir';
+        kz2_wg = Math.sqrt(nIdx*nIdx - kperp2_2);
+      } else {
+        stage2State = 'evanescent';
+      }
+
+      samples.push({
+        i, j, sx, sy, kz_air, kxw, kyw, kz_wg, kperp2,
+        propagates, tirOK,
+        // stage 2 (G2 m=+1)
+        kx2, ky2, kperp2_2, kz2_air, kz2_wg, stage2State,
+        color: fovColor(i, j)
+      });
+    }
+  }
+
+  // Info panel
+  let html = '';
+  html += `<b>FOV ${fovDiagDeg}° / ${aspStr}</b><br>`;
+  html += `θ_h=±${(halfH*180/Math.PI).toFixed(1)}°, θ_v=±${(halfV*180/Math.PI).toFixed(1)}°<br>`;
+  html += `<b>|G1|/k₀</b> = ${G.toFixed(3)} @ ${grAngleDeg}°<br>`;
+  html += `<b>|G2|/k₀</b> = ${G2mag.toFixed(3)} @ ${grAngle2Deg}°<br>`;
+  html += `<b>nk₀</b> = ${nIdx.toFixed(2)} (TIR 臨界 = ${(Math.asin(1/nIdx)*180/Math.PI).toFixed(1)}°)<br>`;
+  // Stage 1 status
+  let nProp = 0, nTIR = 0;
+  for (const s of samples) {
+    if (s.propagates) nProp++;
+    if (s.propagates && s.tirOK) nTIR++;
+  }
+  html += `<br><b>Stage 1 (after G1)</b>: TIR ${nTIR}/9<br>`;
+  // Stage 2 status
+  let nEsc = 0, nTIR2 = 0, nEv = 0;
+  for (const s of samples) {
+    if (!s.propagates || !s.tirOK) continue;
+    if (s.stage2State === 'escape') nEsc++;
+    else if (s.stage2State === 'tir') nTIR2++;
+    else nEv++;
+  }
+  html += `<b>Stage 2 (after G2 m=+1)</b><br>`;
+  html += `&nbsp;&nbsp;進入空氣 ${nEsc}/9 · TIR ${nTIR2}/9 · 消逝 ${nEv}/9<br>`;
+  // Center field detail
+  const c = samples[4];
+  html += `<br>中心 (0,0):<br>`;
+  html += `&nbsp;k₁⊥=(${c.kxw.toFixed(2)}, ${c.kyw.toFixed(2)}), |k|=${Math.sqrt(c.kperp2).toFixed(2)}<br>`;
+  html += `&nbsp;k₂⊥=(${c.kx2.toFixed(2)}, ${c.ky2.toFixed(2)}), |k|=${Math.sqrt(c.kperp2_2).toFixed(2)}<br>`;
+  html += `&nbsp;G2 m=+1: <b>${c.stage2State}</b>`;
+  info.innerHTML = html;
+
+  // Pass everything into draw functions
+  draw3D(nIdx, G, Gx, Gy, grAngle, G2mag, G2x, G2y, grAngle2, samples, sinH, sinV);
+  drawTopView(nIdx, Gx, Gy, G2x, G2y, samples, sinH, sinV);
+  drawPhysical3D(nIdx, G, Gx, Gy, grAngle, G2mag, G2x, G2y, grAngle2, samples, sinH, sinV);
+}
+
+// ========== 3D K-SPACE VIEW ==========
+function draw3D(n, G, Gx, Gy, grAngle, G2mag, G2x, G2y, grAngle2, samples, sinH, sinV) {
+  ctx3.clearRect(0, 0, W, H);
+
+  // 1. Grating plane (z=0)
+  gratingPlane(grAngle);
+
+  // 2. Air hemisphere BELOW (z<0) — brightened for clarity
+  ctx3.globalAlpha = 1;
+  // Lower hemisphere of air sphere (light comes from air, below)
+  for (let lat = 15; lat <= 75; lat += 15) {
+    const t = lat * Math.PI / 180;
+    ellipseAtZ(-1*Math.sin(t), Math.cos(t), 'rgba(140,200,255,0.55)', 0.9, 1.0);
+  }
+  // Longitude meridians for air lower hemisphere
+  {
+    const N = 36;
+    for (let lon = 0; lon < 360; lon += 30) {
+      const cl = Math.cos(lon*Math.PI/180), sl = Math.sin(lon*Math.PI/180);
+      ctx3.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const a = (i/N) * Math.PI;
+        const p = project(Math.cos(a)*cl, Math.cos(a)*sl, -Math.sin(a));
+        if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+      }
+      ctx3.strokeStyle = 'rgba(140,200,255,0.5)';
+      ctx3.lineWidth = 0.7;
+      ctx3.stroke();
+    }
+  }
+  ellipseAtZ(0, 1, 'rgba(140,200,255,0.85)', 1.8); // air equator at z=0 (bright)
+  text3D(0, -1.05, -0.18, 'k₀ (air, below)', 'rgba(140,200,255,0.9)', '11px Arial', 'center');
+
+  // 3. Waveguide hemisphere ABOVE (z>0) — brightened for clarity
+  hemisphere(n, 'rgba(255,200,80,0.85)', 0.95);
+  ellipseAtZ(0, n, 'rgba(255,200,80,1.0)', 2.0); // wg equator (bold bright orange)
+  text3D(0, -n - 0.05, 0.25, 'nk₀ (waveguide, above)', 'rgba(255,200,80,0.95)', '11px Arial', 'center');
+
+  // 4. Axes
+  arrow3D(0,0,0, 1.9,0,0, '#666', 1.2);
+  text3D(1.95, 0, 0, 'kx', '#999', 'italic 13px Arial', 'left', 5, 4);
+  arrow3D(0,0,0, 0,1.9,0, '#666', 1.2);
+  text3D(0, 1.95, 0, 'ky', '#999', 'italic 13px Arial', 'left', 5, 4);
+  arrow3D(0,0,-1.5, 0,0,1.7, '#666', 1.2);
+  text3D(0, 0, 1.75, '+kz (wg)', '#999', '11px Arial', 'center', 0, -8);
+  text3D(0, 0, -1.55, '−kz (air)', '#999', '11px Arial', 'center', 0, 14);
+
+  // 5. G1 vector on grating plane (green)
+  arrow3D(0, 0, 0, Gx, Gy, 0, '#44cc44', 2.2);
+  text3D(Gx*1.05, Gy*1.05, 0, 'G1', '#44cc44', 'bold 14px Arial', 'left', 5, -5);
+
+  // 5b. G2 vector — drawn from (Gx, Gy, 0) so it visually shows the chained shift
+  //     (k1 → k1 + G2 = k2). Magenta to distinguish from G1.
+  arrow3D(Gx, Gy, 0, Gx + G2x, Gy + G2y, 0, '#cc44cc', 2.0);
+  text3D(Gx + G2x*1.05, Gy + G2y*1.05, 0, 'G2', '#cc44cc', 'bold 13px Arial', 'left', 5, -5);
+
+  // 6. FOV box (4:3) on the air hemisphere — projected onto kx-ky plane (at z=0)
+  //    Plus 4 corner edges showing the 4-edges going from origin to the air sphere
+  ctx3.save();
+  ctx3.globalAlpha = 0.7;
+  // Box outline on z=0
+  const boxC = [
+    [-sinH, -sinV, 0], [sinH, -sinV, 0], [sinH, sinV, 0], [-sinH, sinV, 0]
+  ];
+  ctx3.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const p = project(boxC[i][0], boxC[i][1], boxC[i][2]);
+    if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+  }
+  ctx3.closePath();
+  ctx3.strokeStyle = '#88ff66';
+  ctx3.lineWidth = 1.5;
+  ctx3.setLineDash([4, 3]);
+  ctx3.stroke();
+  ctx3.setLineDash([]);
+  ctx3.restore();
+
+  // FOV+G1 shifted box on z=0 (in waveguide k-space, after G1)
+  ctx3.save();
+  ctx3.globalAlpha = 0.7;
+  ctx3.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const p = project(boxC[i][0] + Gx, boxC[i][1] + Gy, 0);
+    if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+  }
+  ctx3.closePath();
+  ctx3.strokeStyle = '#ff8844';
+  ctx3.lineWidth = 1.5;
+  ctx3.stroke();
+  ctx3.restore();
+
+  // FOV+G1+G2 shifted box on z=0 (after G2 m=+1)
+  ctx3.save();
+  ctx3.globalAlpha = 0.7;
+  ctx3.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const p = project(boxC[i][0] + Gx + G2x, boxC[i][1] + Gy + G2y, 0);
+    if (i === 0) ctx3.moveTo(p.px, p.py); else ctx3.lineTo(p.px, p.py);
+  }
+  ctx3.closePath();
+  ctx3.strokeStyle = '#cc66dd';
+  ctx3.lineWidth = 1.5;
+  ctx3.setLineDash([5, 3]);
+  ctx3.stroke();
+  ctx3.setLineDash([]);
+  ctx3.restore();
+
+  // 7. 9 incident k-vectors (going UP from below, in air, ending at origin)
+  //    Filtered by FOV checkbox grid.
+  const incLen = 1.0;
+  for (const s of samples) {
+    if (!isFovEnabled(s)) continue;
+    if (s.kz_air <= 0) continue;
+    const sx_n = s.sx, sy_n = s.sy, sz_n = s.kz_air;
+    // Incident k-vector arrow (thin, from -sx,-sy,-kz_air ending at origin)
+    ctx3.save();
+    ctx3.globalAlpha = 0.6;
+    arrow3D(-sx_n*incLen, -sy_n*incLen, -sz_n*incLen, 0, 0, 0, s.color, 1.2);
+    ctx3.restore();
+    // Colored marker at (sx, sy, 0) on z=0 plane — matches the FOV box dot in the
+    // right-side kx-ky 2D top view (same color, same in-plane position).
+    dot3D(sx_n, sy_n, 0, s.color, 3);
+  }
+
+  // 8. 9 in-coupled k-vectors going UP into waveguide
+  for (const s of samples) {
+    if (!isFovEnabled(s)) continue;
+    if (!s.propagates) continue;
+    const col = s.color;
+    // k-vector arrow
+    ctx3.save();
+    ctx3.globalAlpha = s.tirOK ? 1.0 : 0.45;
+    arrow3D(0, 0, 0, s.kxw, s.kyw, s.kz_wg, col, 2.0);
+    ctx3.restore();
+    // dot on sphere
+    dot3D(s.kxw, s.kyw, s.kz_wg, col, 4.5);
+    // dot on z=0 plane
+    dot3D(s.kxw, s.kyw, 0, col, 3);
+    // dashed projection to z=0
+    line3D(s.kxw, s.kyw, 0, s.kxw, s.kyw, s.kz_wg, col, 0.8, [3,2], 0.5);
+  }
+
+  // 8b. Stage-2 K-vectors (after G2 m=+1) — colored by FOV (s.color) for identity,
+  //     outcome (escape/tir/evanescent) shown via outline ring color.
+  for (const s of samples) {
+    if (!isFovEnabled(s)) continue;
+    if (!s.propagates || !s.tirOK) continue;
+    const fcol = s.color;
+    let endZ, ringCol;
+    if (s.stage2State === 'escape')         { endZ = -s.kz2_air; ringCol = '#88ff66'; }  // green ring = escape
+    else if (s.stage2State === 'tir')       { endZ = s.kz2_wg;   ringCol = '#ffcc44'; }  // yellow ring = continues TIR
+    else                                    { endZ = 0;          ringCol = '#888888'; }  // gray = evanescent
+    // Connector on z=0: (kxw, kyw, 0) → (kx2, ky2, 0) in magenta (G2 step)
+    ctx3.save();
+    ctx3.globalAlpha = 0.55;
+    arrow3D(s.kxw, s.kyw, 0, s.kx2, s.ky2, 0, '#cc66dd', 1.2);
+    ctx3.restore();
+    // Stage-2 K-vector arrow — uses FOV COLOR (matches stage-1 color for same field)
+    ctx3.save();
+    ctx3.globalAlpha = (s.stage2State === 'evanescent') ? 0.30 : 0.85;
+    arrow3D(0, 0, 0, s.kx2, s.ky2, endZ, fcol, 1.8);
+    ctx3.restore();
+    // Marker at stage-2 endpoint: FOV-colored fill + outcome-colored ring
+    if (s.stage2State !== 'evanescent') {
+      const p = project(s.kx2, s.ky2, endZ);
+      ctx3.beginPath(); ctx3.arc(p.px, p.py, 4.5, 0, Math.PI*2);
+      ctx3.fillStyle = fcol; ctx3.fill();
+      ctx3.strokeStyle = ringCol; ctx3.lineWidth = 2;
+      ctx3.beginPath(); ctx3.arc(p.px, p.py, 6.5, 0, Math.PI*2); ctx3.stroke();
+    } else {
+      // X mark on z=0
+      const p = project(s.kx2, s.ky2, 0);
+      ctx3.save();
+      ctx3.strokeStyle = ringCol; ctx3.lineWidth = 1.4;
+      ctx3.beginPath();
+      ctx3.moveTo(p.px-5, p.py-5); ctx3.lineTo(p.px+5, p.py+5);
+      ctx3.moveTo(p.px+5, p.py-5); ctx3.lineTo(p.px-5, p.py+5);
+      ctx3.stroke();
+      ctx3.restore();
+    }
+    // small dot on z=0 plane
+    dot3D(s.kx2, s.ky2, 0, fcol, 2.5);
+  }
+
+  // 9. Annotation: focus field — show m=0 / m=+1 labels for both gratings
+  const focusIdxMain = parseInt(sFocusField.value);
+  const cs = samples[focusIdxMain];
+  if (cs && cs.propagates && isFovEnabled(cs)) {
+    // m=+1 (G1) — at k1 endpoint on nk₀ upper hemisphere
+    text3D(cs.kxw, cs.kyw, cs.kz_wg, 'm=+1 (G1)', '#fff', 'bold 11px Arial', 'left', 8, -10);
+    // m=0 (G2): no shift — light reflects with kz flipped (continues TIR at SAME kperp)
+    // Endpoint = (kxw, kyw, -kz_wg) on nk₀ LOWER hemisphere
+    if (cs.tirOK) {
+      ctx3.save();
+      ctx3.globalAlpha = 0.7;
+      arrow3D(0, 0, 0, cs.kxw, cs.kyw, -cs.kz_wg, '#aaaaaa', 1.4);
+      ctx3.restore();
+      dot3D(cs.kxw, cs.kyw, -cs.kz_wg, '#cccccc', 4);
+      text3D(cs.kxw, cs.kyw, -cs.kz_wg, 'm=0 (G2 反射)', '#cccccc', 'bold 11px Arial', 'left', 6, 12);
+      // m=+1 (G2) — at stage-2 endpoint
+      let endZ;
+      if (cs.stage2State === 'escape')   endZ = -cs.kz2_air;
+      else if (cs.stage2State === 'tir') endZ = cs.kz2_wg;
+      else                               endZ = 0;
+      text3D(cs.kx2, cs.ky2, endZ, 'm=+1 (G2)', '#fff', 'bold 11px Arial', 'left', 8, -10);
+    }
+  }
+
+  // 10. Surface labels
+  text3D(-1.3, -1.3, 0.06, '↑ 波導 (n)', 'rgba(220,170,60,0.55)', '11px Arial', 'left');
+  text3D(-1.3, -1.3, -0.18, '↓ 空氣 (n=1)', 'rgba(120,180,255,0.55)', '11px Arial', 'left');
+  text3D(-1.3, -1.3, 0, '光柵 (z=0)', 'rgba(150,170,200,0.55)', '11px Arial', 'left', 0, 14);
+
+  // 11. Title hint
+  ctx3.fillStyle = '#7eb8ff';
+  ctx3.font = 'bold 13px Arial';
+  ctx3.textAlign = 'left';
+  ctx3.fillText('3D K-space — 兩道光柵: G1 (in-coupler) + G2 (EPE m=0,+1)', 12, 18);
+  ctx3.fillStyle = '#888';
+  ctx3.font = '10px Arial';
+  ctx3.fillText('滑鼠拖曳旋轉, 滾輪縮放', 12, 32);
+}
+
+// ========== TOP VIEW (kx-ky) ==========
+function drawTopView(n, Gx, Gy, G2x, G2y, samples, sinH, sinV) {
+  const W2 = cvTop.width, H2 = cvTop.height;
+  const cx = W2 / 2, cy = H2 / 2;
+  const c = ctxT;
+
+  c.clearRect(0, 0, W2, H2);
+  c.fillStyle = '#0d0d22';
+  c.fillRect(0, 0, W2, H2);
+
+  // Title
+  c.fillStyle = '#7eb8ff';
+  c.font = 'bold 13px Arial';
+  c.textAlign = 'center';
+  c.fillText('kx–ky 上視圖 (4:3 FOV box, 9 fields, +G shift)', cx, 16);
+
+  // Scale: choose so n*k₀ + |G+sinH| fits comfortably
+  const Gmag = Math.sqrt(Gx*Gx + Gy*Gy);
+  const maxR = Math.max(n, Gmag + sinH) + 0.2;
+  const sc = Math.min(W2, H2-30) * 0.42 / maxR;
+
+  // Axes
+  c.strokeStyle = '#444'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(15, cy); c.lineTo(W2-15, cy); c.stroke();
+  c.beginPath(); c.moveTo(cx, 25); c.lineTo(cx, H2-15); c.stroke();
+  c.fillStyle = '#888'; c.font = 'italic 11px Arial';
+  c.textAlign = 'left'; c.fillText('kx', W2-22, cy-4);
+  c.textAlign = 'center'; c.fillText('ky', cx+12, 36);
+
+  // TIR annulus shading
+  c.save();
+  c.fillStyle = 'rgba(255,100,100,0.06)';
+  c.beginPath();
+  c.arc(cx, cy, n*sc, 0, Math.PI*2);
+  c.arc(cx, cy, sc, 0, Math.PI*2, true);
+  c.closePath(); c.fill();
+  c.restore();
+
+  // Air circle (k₀ = 1)
+  c.strokeStyle = 'rgba(120,180,255,0.6)';
+  c.lineWidth = 1.5;
+  c.beginPath(); c.arc(cx, cy, sc, 0, Math.PI*2); c.stroke();
+  c.fillStyle = 'rgba(120,180,255,0.7)';
+  c.font = '10px Arial'; c.textAlign = 'left';
+  c.fillText('k₀', cx + sc + 3, cy - 3);
+
+  // Waveguide circle (nk₀)
+  c.strokeStyle = 'rgba(220,170,60,0.65)';
+  c.lineWidth = 1.5;
+  c.beginPath(); c.arc(cx, cy, n*sc, 0, Math.PI*2); c.stroke();
+  c.fillStyle = 'rgba(220,170,60,0.75)';
+  c.fillText('nk₀', cx + n*sc + 3, cy - 3);
+
+  // TIR label
+  c.fillStyle = 'rgba(255,120,120,0.5)';
+  c.font = 'bold 9px Arial'; c.textAlign = 'center';
+  c.fillText('TIR', cx + (sc + n*sc)/2, cy - 4);
+
+  // FOV box (incident, in air): half-widths sinH × sinV
+  c.fillStyle = 'rgba(136,255,102,0.10)';
+  c.fillRect(cx - sinH*sc, cy - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeStyle = '#88ff66';
+  c.lineWidth = 1.5;
+  c.setLineDash([4, 3]);
+  c.strokeRect(cx - sinH*sc, cy - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([]);
+  c.fillStyle = '#88ff66';
+  c.font = 'bold 9px Arial'; c.textAlign = 'center';
+  c.fillText('FOV', cx, cy + sinV*sc + 11);
+
+  // FOV+G1 shifted box (in waveguide after G1)
+  c.fillStyle = 'rgba(255,136,68,0.12)';
+  c.fillRect(cx + Gx*sc - sinH*sc, cy - Gy*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeStyle = '#ff8844';
+  c.lineWidth = 1.5;
+  c.strokeRect(cx + Gx*sc - sinH*sc, cy - Gy*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.fillStyle = '#ff8844';
+  c.fillText('FOV+G1', cx + Gx*sc, cy - Gy*sc + sinV*sc + 11);
+
+  // FOV+G1+G2 shifted box (after G2 m=+1)
+  const G12x = Gx + G2x, G12y = Gy + G2y;
+  c.fillStyle = 'rgba(204,102,221,0.12)';
+  c.fillRect(cx + G12x*sc - sinH*sc, cy - G12y*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeStyle = '#cc66dd';
+  c.lineWidth = 1.5;
+  c.setLineDash([5,3]);
+  c.strokeRect(cx + G12x*sc - sinH*sc, cy - G12y*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([]);
+  c.fillStyle = '#cc66dd';
+  c.fillText('FOV+G1+G2', cx + G12x*sc, cy - G12y*sc + sinV*sc + 11);
+
+  // G1 arrow (green, from origin)
+  c.strokeStyle = '#44cc44'; c.lineWidth = 2;
+  draw2DArrow(c, cx, cy, cx + Gx*sc, cy - Gy*sc, '#44cc44', 2);
+  c.fillStyle = '#44cc44'; c.font = 'bold 11px Arial'; c.textAlign = 'left';
+  c.fillText('G1', cx + Gx*sc*0.5 + 6, cy - Gy*sc*0.5 - 4);
+
+  // G2 arrow (magenta, from G1 endpoint, showing chained shift)
+  c.strokeStyle = '#cc44cc'; c.lineWidth = 2;
+  draw2DArrow(c, cx + Gx*sc, cy - Gy*sc, cx + G12x*sc, cy - G12y*sc, '#cc44cc', 2);
+  c.fillStyle = '#cc44cc'; c.font = 'bold 11px Arial'; c.textAlign = 'left';
+  c.fillText('G2', cx + (Gx + G12x)*0.5*sc + 6, cy - (Gy + G12y)*0.5*sc - 4);
+
+  // 9 sample points: original (in air) + shifted (in waveguide), filtered by checkbox
+  for (const s of samples) {
+    if (!isFovEnabled(s)) continue;
+    const px = cx + s.sx*sc;
+    const py = cy - s.sy*sc;
+    const px2 = cx + s.kxw*sc;
+    const py2 = cy - s.kyw*sc;
+    // Connect line
+    c.save();
+    c.globalAlpha = 0.35;
+    c.strokeStyle = s.color;
+    c.lineWidth = 0.8;
+    c.setLineDash([2, 2]);
+    c.beginPath(); c.moveTo(px, py); c.lineTo(px2, py2); c.stroke();
+    c.setLineDash([]);
+    c.restore();
+    // Original (small dot)
+    c.fillStyle = s.color;
+    c.beginPath(); c.arc(px, py, 3, 0, Math.PI*2); c.fill();
+    // Shifted (larger dot, ringed if not TIR)
+    c.beginPath(); c.arc(px2, py2, 4.5, 0, Math.PI*2); c.fill();
+    if (s.propagates && !s.tirOK) {
+      c.strokeStyle = '#ff5555'; c.lineWidth = 1.2;
+      c.beginPath(); c.arc(px2, py2, 6.5, 0, Math.PI*2); c.stroke();
+    } else if (!s.propagates) {
+      // X mark
+      c.strokeStyle = '#ff5555'; c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(px2-5, py2-5); c.lineTo(px2+5, py2+5);
+      c.moveTo(px2+5, py2-5); c.lineTo(px2-5, py2+5);
+      c.stroke();
+    }
+  }
+
+  // OPTIONAL: arrows from origin to each diffracted (kxw, kyw) showing K direction
+  if (cbKArrows.checked) {
+    for (const s of samples) {
+      if (!isFovEnabled(s)) continue;
+      if (!s.propagates) continue;
+      const px2 = cx + s.kxw*sc;
+      const py2 = cy - s.kyw*sc;
+      c.save();
+      c.globalAlpha = s.tirOK ? 0.85 : 0.4;
+      draw2DArrow(c, cx, cy, px2, py2, s.color, 1.6);
+      c.restore();
+    }
+  }
+
+  // STAGE-2 dots (after G2 m=+1) — fill in FOV color, ring color by outcome
+  for (const s of samples) {
+    if (!isFovEnabled(s)) continue;
+    if (!s.propagates || !s.tirOK) continue;
+    const px3 = cx + s.kx2*sc;
+    const py3 = cy - s.ky2*sc;
+    let ringCol;
+    if (s.stage2State === 'escape')         ringCol = '#88ff66';
+    else if (s.stage2State === 'tir')       ringCol = '#ffcc44';
+    else                                    ringCol = '#888';
+    // dashed connector kxw,kyw → kx2,ky2 (G2 shift)
+    c.save();
+    c.globalAlpha = 0.4;
+    c.strokeStyle = '#cc66dd';
+    c.lineWidth = 0.8;
+    c.setLineDash([3,2]);
+    c.beginPath();
+    c.moveTo(cx + s.kxw*sc, cy - s.kyw*sc);
+    c.lineTo(px3, py3);
+    c.stroke();
+    c.setLineDash([]);
+    c.restore();
+    // Dot at stage-2 position — FILL = FOV color (identity), RING = outcome
+    c.fillStyle = s.color;
+    c.beginPath(); c.arc(px3, py3, 4, 0, Math.PI*2); c.fill();
+    c.strokeStyle = ringCol;
+    c.lineWidth = 1.8;
+    c.beginPath(); c.arc(px3, py3, 6.5, 0, Math.PI*2); c.stroke();
+    if (s.stage2State === 'evanescent') {
+      c.strokeStyle = '#888'; c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(px3-4, py3-4); c.lineTo(px3+4, py3+4);
+      c.moveTo(px3+4, py3-4); c.lineTo(px3-4, py3+4);
+      c.stroke();
+    }
+  }
+
+  // Highlight the focused (i,j) field selected for the bottom-right 3D view
+  const focusIdxT = parseInt(sFocusField.value);
+  const fsT = samples[focusIdxT];
+  if (fsT) {
+    const px = cx + fsT.sx*sc, py = cy - fsT.sy*sc;
+    const px2 = cx + fsT.kxw*sc, py2 = cy - fsT.kyw*sc;
+    c.save();
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 2;
+    c.beginPath(); c.arc(px,  py,  6.5, 0, Math.PI*2); c.stroke();
+    c.beginPath(); c.arc(px2, py2, 8,   0, Math.PI*2); c.stroke();
+    // small "★" or label
+    c.fillStyle = '#fff';
+    c.font = 'bold 10px Arial';
+    c.textAlign = 'center';
+    c.fillText('★', px2, py2 - 12);
+    c.restore();
+  }
+
+  // Scale ref
+  c.strokeStyle = '#555'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(W2-60, H2-22); c.lineTo(W2-60+sc, H2-22); c.stroke();
+  c.fillStyle = '#888'; c.font = '9px Arial'; c.textAlign = 'center';
+  c.fillText('k₀', W2-60+sc/2, H2-10);
+}
+
+function draw2DArrow(c, x1, y1, x2, y2, color, width) {
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2);
+  c.strokeStyle = color; c.lineWidth = width; c.stroke();
+  const ang = Math.atan2(y2-y1, x2-x1);
+  const hd = 7;
+  c.beginPath(); c.moveTo(x2, y2);
+  c.lineTo(x2 - hd*Math.cos(ang-0.35), y2 - hd*Math.sin(ang-0.35));
+  c.lineTo(x2 - hd*Math.cos(ang+0.35), y2 - hd*Math.sin(ang+0.35));
+  c.closePath(); c.fillStyle = color; c.fill();
+}
+
+// ========== PHYSICAL 3D VIEW (same K-space rotation, shows G1, G2 and k vectors) ==========
+function drawPhysical3D(n, G, Gx, Gy, grAngle, G2mag, G2x, G2y, grAngle2, samples, sinH, sinV) {
+  const W2 = cvSide.width, H2 = cvSide.height;
+  const c = ctxS;
+  c.clearRect(0, 0, W2, H2);
+  c.fillStyle = '#0d0d22';
+  c.fillRect(0, 0, W2, H2);
+
+  // Title (reflects current view mode)
+  c.fillStyle = '#7eb8ff';
+  c.font = 'bold 13px Arial';
+  c.textAlign = 'center';
+  const modeTxt = brViewMode === 'top' ? '上視 xy' : brViewMode === 'side' ? '側視 xz' : '同主視角';
+  c.fillText('右下 3D — G1+G2 + k_in/k1/k2 (' + modeTxt + ')', W2/2, 16);
+
+  // Effective rotation depends on bottom-right view mode.
+  // Top mode uses rotX = +π/2 − ε so that +y world maps to UP on canvas, matching
+  // the upper kx-ky 2D view (which uses standard math convention +y up).
+  let effRotX = rotX, effRotZ = rotZ;
+  if (brViewMode === 'top')  { effRotX =  Math.PI/2 - 0.001; effRotZ = 0; }
+  if (brViewMode === 'side') { effRotX = 0;                  effRotZ = 0; }
+
+  const cxM = W2 / 2;
+  const cyM = H2 / 2 + 10;
+  const scM = Math.min(W2, H2) * 0.30;
+
+  function projM(x, y, z) {
+    const cz = Math.cos(effRotZ), sz = Math.sin(effRotZ);
+    let x1 = x*cz - y*sz;
+    let y1 = x*sz + y*cz;
+    let z1 = z;
+    const cxr = Math.cos(effRotX), sxr = Math.sin(effRotX);
+    let y2 = y1*cxr - z1*sxr;
+    let z2 = y1*sxr + z1*cxr;
+    return { px: cxM + x1 * scM, py: cyM - z2 * scM, depth: y2 };
+  }
+
+  function lineM(x1,y1,z1, x2,y2,z2, color, width, dash, alpha) {
+    const a = projM(x1,y1,z1), b = projM(x2,y2,z2);
+    c.save();
+    if (alpha != null) c.globalAlpha = alpha;
+    c.beginPath(); c.moveTo(a.px, a.py); c.lineTo(b.px, b.py);
+    c.strokeStyle = color; c.lineWidth = width;
+    if (dash) c.setLineDash(dash);
+    c.stroke();
+    c.restore();
+  }
+
+  function arrowM(x1,y1,z1, x2,y2,z2, color, width) {
+    const a = projM(x1,y1,z1), b = projM(x2,y2,z2);
+    c.beginPath(); c.moveTo(a.px, a.py); c.lineTo(b.px, b.py);
+    c.strokeStyle = color; c.lineWidth = width; c.stroke();
+    const ang = Math.atan2(b.py - a.py, b.px - a.px);
+    const hd = 7;
+    c.beginPath();
+    c.moveTo(b.px, b.py);
+    c.lineTo(b.px - hd*Math.cos(ang-0.35), b.py - hd*Math.sin(ang-0.35));
+    c.lineTo(b.px - hd*Math.cos(ang+0.35), b.py - hd*Math.sin(ang+0.35));
+    c.closePath(); c.fillStyle = color; c.fill();
+  }
+
+  function dotM(x, y, z, color, r) {
+    const p = projM(x, y, z);
+    c.beginPath(); c.arc(p.px, p.py, r, 0, Math.PI*2);
+    c.fillStyle = color; c.fill();
+  }
+
+  function textM(x, y, z, txt, color, font, align, ox, oy) {
+    const p = projM(x, y, z);
+    c.fillStyle = color; c.font = font || '11px Arial';
+    c.textAlign = align || 'left';
+    c.fillText(txt, p.px + (ox||0), p.py + (oy||0));
+  }
+
+  function ellipseAtZ_M(oz, r, color, width, alpha) {
+    const N = 60;
+    c.save();
+    if (alpha != null) c.globalAlpha = alpha;
+    c.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = (i/N) * Math.PI*2;
+      const p = projM(r*Math.cos(a), r*Math.sin(a), oz);
+      if (i === 0) c.moveTo(p.px, p.py); else c.lineTo(p.px, p.py);
+    }
+    c.strokeStyle = color; c.lineWidth = width; c.stroke();
+    c.restore();
+  }
+
+  function hemisphereM(r, color, alpha, sign) {
+    if (sign === undefined) sign = 1;
+    // latitude rings
+    for (let lat = 20; lat <= 70; lat += 25) {
+      const t = lat * Math.PI / 180;
+      ellipseAtZ_M(sign * r * Math.sin(t), r * Math.cos(t), color, 0.5, alpha);
+    }
+    // longitude meridians (a few)
+    const N = 30;
+    for (let lon = 0; lon < 360; lon += 45) {
+      const cl = Math.cos(lon*Math.PI/180), sl = Math.sin(lon*Math.PI/180);
+      c.save();
+      c.globalAlpha = alpha;
+      c.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const a = (i/N) * Math.PI;
+        const p = projM(r*Math.cos(a)*cl, r*Math.cos(a)*sl, sign*r*Math.sin(a));
+        if (i === 0) c.moveTo(p.px, p.py); else c.lineTo(p.px, p.py);
+      }
+      c.strokeStyle = color; c.lineWidth = 0.5; c.stroke();
+      c.restore();
+    }
+  }
+
+  // ----- Grating plate at z=0 with grooves perpendicular to G -----
+  const sz = 1.15;
+  const corners = [[-sz,-sz,0],[sz,-sz,0],[sz,sz,0],[-sz,sz,0]];
+  c.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const p = projM(corners[i][0], corners[i][1], corners[i][2]);
+    if (i === 0) c.moveTo(p.px, p.py); else c.lineTo(p.px, p.py);
+  }
+  c.closePath();
+  c.fillStyle = 'rgba(180,200,230,0.10)';
+  c.fill();
+  c.strokeStyle = 'rgba(180,200,230,0.4)';
+  c.lineWidth = 0.8;
+  c.stroke();
+  // Grooves: parallel lines along direction perpendicular to G (groove direction = (-sin φG, cos φG))
+  const cgA = Math.cos(grAngle), sgA = Math.sin(grAngle);
+  c.save();
+  c.globalAlpha = 0.45;
+  for (let i = -10; i <= 10; i++) {
+    const off = i * 0.10;
+    const ox = off * cgA, oy = off * sgA;          // offset along G
+    const lx = -sgA, ly = cgA;                      // along grooves (⊥ G)
+    const len = 1.05;
+    lineM(ox - lx*len, oy - ly*len, 0,
+          ox + lx*len, oy + ly*len, 0, '#9bb0d4', 0.7);
+  }
+  c.restore();
+
+  // Hemisphere wireframes — brightened for clarity
+  hemisphereM(1.0, 'rgba(140,200,255,0.65)', 0.85, -1); // air below
+  ellipseAtZ_M(0, 1.0, 'rgba(140,200,255,0.95)', 1.5);
+  hemisphereM(n,   'rgba(255,200,80,0.65)', 0.85, +1);  // wg above
+  ellipseAtZ_M(0, n, 'rgba(255,200,80,0.95)', 1.5);
+
+  // ----- Coordinate axes -----
+  arrowM(0,0,0, 1.45,0,0, '#888', 1);
+  textM(1.5, 0, 0, 'kx', '#aaa', 'italic 11px Arial', 'left', 4, 4);
+  arrowM(0,0,0, 0,1.45,0, '#888', 1);
+  textM(0, 1.5, 0, 'ky', '#aaa', 'italic 11px Arial', 'left', 4, 4);
+  arrowM(0,0,-1.2, 0,0,1.4, '#888', 1);
+  textM(0, 0, 1.45, '+kz', '#aaa', '10px Arial', 'center', 0, -6);
+  textM(0, 0, -1.25, '−kz', '#aaa', '10px Arial', 'center', 0, 12);
+
+  // ----- G1 vector (green) and G2 vector (magenta) on grating plane -----
+  arrowM(0, 0, 0, Gx, Gy, 0, '#44cc44', 2.4);
+  textM(Gx*1.05, Gy*1.05, 0, 'G1', '#44cc44', 'bold 13px Arial', 'left', 5, -4);
+  arrowM(Gx, Gy, 0, Gx + G2x, Gy + G2y, 0, '#cc44cc', 2.0);
+  textM(Gx + G2x*1.05, Gy + G2y*1.05, 0, 'G2', '#cc44cc', 'bold 12px Arial', 'left', 5, -4);
+
+  // ----- Focused FOV sample's k_in, k1 (after G1), k2 (after G2 m=+1) -----
+  const focusIdx = parseInt(sFocusField.value);
+  const fs = samples[focusIdx];
+  if (fs && fs.kz_air > 0) {
+    const fcol = fs.color;
+    // k_in: light coming FROM air below INTO origin
+    arrowM(-fs.sx, -fs.sy, -fs.kz_air, 0, 0, 0, fcol, 2.2);
+    textM(-fs.sx, -fs.sy, -fs.kz_air, 'k_in', fcol, 'bold 12px Arial', 'right', -5, 4);
+    dotM(fs.sx, fs.sy, 0, fcol, 3);
+
+    if (fs.propagates) {
+      // k1 (= G1 m=+1) — from origin to (kxw, kyw, +kz_wg) on nk0 sphere
+      arrowM(0, 0, 0, fs.kxw, fs.kyw, fs.kz_wg, fcol, 2.6);
+      textM(fs.kxw, fs.kyw, fs.kz_wg, 'k1 = m=+1 (G1)', fcol, 'bold 12px Arial', 'left', 6, -4);
+      dotM(fs.kxw, fs.kyw, fs.kz_wg, fcol, 5);
+      dotM(fs.kxw, fs.kyw, 0, fcol, 3);
+      lineM(fs.kxw, fs.kyw, 0, fs.kxw, fs.kyw, fs.kz_wg, fcol, 0.8, [3,2], 0.5);
+      // G1 step on z=0
+      lineM(fs.sx, fs.sy, 0, fs.kxw, fs.kyw, 0, '#44cc44', 1.6, [4,3], 0.85);
+
+      // m=0 of G2: no in-plane shift, kz flips (TIR reflection inside waveguide)
+      // Endpoint = (kxw, kyw, -kz_wg) on lower nk₀ hemisphere
+      if (fs.tirOK) {
+        arrowM(0, 0, 0, fs.kxw, fs.kyw, -fs.kz_wg, '#aaaaaa', 1.6);
+        textM(fs.kxw, fs.kyw, -fs.kz_wg, 'm=0 (G2 反射)', '#cccccc', 'bold 11px Arial', 'left', 6, 12);
+        dotM(fs.kxw, fs.kyw, -fs.kz_wg, '#cccccc', 4);
+      }
+
+      // k2 = G2 m=+1
+      if (fs.tirOK) {
+        let endZ, sCol, label;
+        if (fs.stage2State === 'escape')   { endZ = -fs.kz2_air; sCol = '#88ff66'; label = 'k2 = m=+1 (G2: 進入空氣)'; }
+        else if (fs.stage2State === 'tir') { endZ = fs.kz2_wg;   sCol = '#ffcc44'; label = 'k2 = m=+1 (G2: 仍 TIR)';   }
+        else                               { endZ = 0;           sCol = '#888888'; label = 'k2 = m=+1 (G2: 消逝)';     }
+        arrowM(0, 0, 0, fs.kx2, fs.ky2, endZ, sCol, 2.4);
+        textM(fs.kx2, fs.ky2, endZ, label, sCol, 'bold 11px Arial', 'left', 6, -4);
+        if (fs.stage2State !== 'evanescent') dotM(fs.kx2, fs.ky2, endZ, sCol, 5);
+        dotM(fs.kx2, fs.ky2, 0, sCol, 3);
+        // G2 step on z=0 (k1⊥ → k2⊥)
+        lineM(fs.kxw, fs.kyw, 0, fs.kx2, fs.ky2, 0, '#cc44cc', 1.6, [4,3], 0.85);
+      }
+    }
+
+    // Identification badge: which (i,j) field is being shown
+    const labelIJ = `field (${fs.i>=0?'+':''}${fs.i}, ${fs.j>=0?'+':''}${fs.j})`;
+    c.save();
+    // Background pill
+    c.font = 'bold 12px Arial';
+    c.textAlign = 'left';
+    const pad = 8;
+    const txtW = c.measureText(labelIJ).width;
+    const bx = 12, by = 30, bh = 22;
+    c.fillStyle = 'rgba(20,20,40,0.85)';
+    c.strokeStyle = fcol;
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.roundRect ? c.roundRect(bx, by, txtW + 2*pad + 16, bh, 6)
+                : c.rect(bx, by, txtW + 2*pad + 16, bh);
+    c.fill(); c.stroke();
+    // colored dot
+    c.beginPath();
+    c.arc(bx + pad + 5, by + bh/2, 5, 0, Math.PI*2);
+    c.fillStyle = fcol; c.fill();
+    // label text
+    c.fillStyle = '#e0e0e0';
+    c.fillText(labelIJ, bx + pad + 16, by + bh/2 + 4);
+    c.restore();
+  }
+
+  // ----- Surface labels — only in 'sync' (perspective) mode where they don't overlap -----
+  if (brViewMode === 'sync') {
+    textM(-1.2, 1.2, 0, '光柵 (z=0)', 'rgba(150,170,200,0.55)', '10px Arial', 'left');
+    textM(-1.2, 1.2, 0.20, '↑ 波導 nk₀', 'rgba(220,170,60,0.65)', '10px Arial', 'left');
+    textM(-1.2, 1.2, -0.18, '↓ 空氣 k₀', 'rgba(120,180,255,0.65)', '10px Arial', 'left');
+  } else if (brViewMode === 'top') {
+    // In top view we look down at xy plane — single label in corner is enough
+    c.fillStyle = 'rgba(150,170,200,0.6)';
+    c.font = '10px Arial'; c.textAlign = 'left';
+    c.fillText('▼ 從 +z 上方往下看 (xy plane)', 8, H2 - 22);
+  } else if (brViewMode === 'side') {
+    c.fillStyle = 'rgba(150,170,200,0.6)';
+    c.font = '10px Arial'; c.textAlign = 'left';
+    c.fillText('◀ 從 +y 側面看 (xz plane), 空氣 z<0 / 波導 z>0', 8, H2 - 22);
+  }
+
+  // Bottom note (only in sync mode)
+  if (brViewMode === 'sync') {
+    c.fillStyle = '#8a8aaa';
+    c.font = '9.5px Arial'; c.textAlign = 'center';
+    c.fillText('↻ 旋轉左上 3D, 此圖跟著轉; 切換 field 用面板下拉', W2/2, H2 - 6);
+  }
+}
+
+// (legacy drawSideView retained below for reference; not called)
+function drawSideView_legacy(n, G, samples, sinH, sinV, beamMM, dMM, lam, period) {
+  const W2 = cvSide.width, H2 = cvSide.height;
+  const c = ctxS;
+  c.clearRect(0, 0, W2, H2);
+  c.fillStyle = '#0d0d22';
+  c.fillRect(0, 0, W2, H2);
+
+  // Title
+  c.fillStyle = '#7eb8ff';
+  c.font = 'bold 13px Arial';
+  c.textAlign = 'center';
+  c.fillText('xz 剖面 — 4 mm 準直光束 in-couple + TIR', W2/2, 16);
+
+  // Geometry: air below, waveguide above, grating at z=0
+  // pixel scale: 1 mm = mmPx pixels
+  const mmPx = 22; // 1mm = 22px
+  const dPx = dMM * mmPx; // waveguide thickness in px
+  const beamPx = beamMM * mmPx;
+
+  // Layout: waveguide between y=wgTop and y=wgBot, with air below (y > wgBot)
+  const wgL = 25, wgR = W2 - 15;
+  // Allocate vertical space
+  const usableTop = 30, usableBot = H2 - 18;
+  const wgTop = usableTop + 18;
+  const wgBot = wgTop + dPx;
+  // Air region below waveguide (incident beams come from here going up)
+  const airBot = usableBot - 8; // reserve space for grating label
+
+  // Draw waveguide slab
+  const grad = c.createLinearGradient(0, wgTop, 0, wgBot);
+  grad.addColorStop(0, '#5a6080');
+  grad.addColorStop(1, '#4a5070');
+  c.fillStyle = grad;
+  c.fillRect(wgL, wgTop, wgR - wgL, wgBot - wgTop);
+  c.strokeStyle = '#8890aa';
+  c.lineWidth = 1;
+  c.strokeRect(wgL, wgTop, wgR - wgL, wgBot - wgTop);
+  c.fillStyle = '#aabbcc';
+  c.font = '10px Arial'; c.textAlign = 'left';
+  c.fillText(`波導 n=${n.toFixed(2)}, d=${dMM}mm`, wgL + 4, wgTop - 4);
+
+  // In-coupler grating on bottom of waveguide (at y = wgBot)
+  const inGrLeft = wgL + 30, inGrRight = inGrLeft + Math.max(beamPx*1.2, 70);
+  c.fillStyle = 'rgba(70,100,220,0.4)';
+  c.fillRect(inGrLeft, wgBot, inGrRight - inGrLeft, 5);
+  for (let gx = inGrLeft; gx < inGrRight; gx += 5) {
+    c.fillStyle = '#6688ee';
+    c.fillRect(gx, wgBot, 2, 5);
+  }
+  c.fillStyle = '#88aaff';
+  c.font = '9px Arial'; c.textAlign = 'center';
+  c.fillText(`In-coupler Λ=${period}nm`, (inGrLeft+inGrRight)/2, wgBot + 16);
+
+  // Air label
+  c.fillStyle = 'rgba(120,180,255,0.5)';
+  c.font = '10px Arial'; c.textAlign = 'left';
+  c.fillText('空氣 (n=1, 顯示器側)', wgL + 4, airBot - 4);
+
+  // Three horizontal-FOV samples (kx = -sinH, 0, +sinH; we use j=0 row of samples)
+  // Pick samples at (i, 0) for i ∈ {-1, 0, +1}: indices 3, 4, 5
+  const sideSamples = [samples[3], samples[4], samples[5]];
+
+  // For each: trace beam from below, hits in-coupler, then propagates into waveguide
+  // Use sample's kxw and kz_wg to determine propagation angle in waveguide.
+  // Incident beam from below: angle θ_inc from vertical such that sin θ_inc = sx (in air, ky=0)
+  // Beam center hits the middle of in-coupler.
+  const grCenterX = (inGrLeft + inGrRight) / 2;
+
+  // Helper: compute beam edges
+  function beamEdges(sx) {
+    // beam direction in xz: (sx, kz_inc) where kz_inc = sqrt(1 - sx²)
+    const kz_air = Math.sqrt(Math.max(0, 1 - sx*sx));
+    // beam dir unit
+    const dirX = sx, dirY = -kz_air; // in screen coords, "up" is -y
+    // perpendicular (rotate 90°)
+    const perpX = -dirY, perpY = dirX;
+    return { dirX, dirY, perpX, perpY, kz_air };
+  }
+
+  // Draw for each sample
+  for (let si = 0; si < sideSamples.length; si++) {
+    const s = sideSamples[si];
+    if (!s.propagates) continue;
+    const col = s.color;
+    const sx = s.sx; // since j=0
+    const e = beamEdges(sx);
+    // Half-width (perpendicular) in pixels
+    const hw = beamPx / 2;
+    // Beam center hits grating at (grCenterX, wgBot)
+    const cxIn = grCenterX, cyIn = wgBot;
+    // Incident beam: from far below, going up at angle (sx, kz_air)
+    // Trace incident beam from grating downward (negative direction) to airBot
+    const distAir = (airBot - cyIn) / Math.abs(e.dirY); // positive distance going down
+    const startCx = cxIn - e.dirX * distAir;
+    const startCy = cyIn - e.dirY * distAir; // since dirY is negative, this is below wgBot
+    // Beam edges at start
+    const sLx = startCx - e.perpX * hw, sLy = startCy - e.perpY * hw;
+    const sRx = startCx + e.perpX * hw, sRy = startCy + e.perpY * hw;
+    // Beam edges at grating
+    const gLx = cxIn - e.perpX * hw, gLy = cyIn - e.perpY * hw;
+    const gRx = cxIn + e.perpX * hw, gRy = cyIn + e.perpY * hw;
+    // Draw incident beam as parallelogram (semi-transparent fill + edges)
+    c.save();
+    c.globalAlpha = 0.18;
+    c.fillStyle = col;
+    c.beginPath();
+    c.moveTo(sLx, sLy); c.lineTo(sRx, sRy);
+    c.lineTo(gRx, gRy); c.lineTo(gLx, gLy);
+    c.closePath(); c.fill();
+    c.restore();
+    // Edges
+    c.save();
+    c.globalAlpha = 0.7;
+    c.strokeStyle = col;
+    c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(sLx, sLy); c.lineTo(gLx, gLy); c.stroke();
+    c.beginPath(); c.moveTo(sRx, sRy); c.lineTo(gRx, gRy); c.stroke();
+    c.restore();
+
+    // Inside waveguide: propagation direction from kxw and kz_wg (in xz, ky=0 row)
+    // propDir = (kxw, +kz_wg)/n in 3D; project to xz: (kxw, kz_wg)
+    // In screen coords: (kxw, -kz_wg) since "up" is -y
+    const kn = Math.sqrt(s.kxw*s.kxw + s.kz_wg*s.kz_wg); // in xz only (ky=0)
+    let pdx = s.kxw / kn, pdy = -s.kz_wg / kn;
+    // Beam perpendicular inside waveguide
+    let prpx = -pdy, prpy = pdx;
+
+    // Trace bounces inside waveguide for each edge ray
+    // Edge ray L starts at gLx,gLy, edge R at gRx,gRy
+    // After diffraction, rays go in direction (pdx, pdy)
+    // (Note: beam width perpendicular to direction is preserved across diffraction
+    //  in 1D approximation when we track edges separately. The actual diffraction
+    //  of a finite beam is more complex but we approximate by parallel rays.)
+    // Trace each edge through TIR bounces.
+    function traceTIR(x0, y0, dx, dy) {
+      const path = [{x:x0, y:y0}];
+      let x = x0, y = y0, ux = dx, uy = dy;
+      let safety = 0;
+      while (x < wgR + 5 && safety < 30) {
+        safety++;
+        // distance to top (uy<0 going up) or bottom (uy>0 going down)
+        let tTop = (wgTop - y) / uy;
+        let tBot = (wgBot - y) / uy;
+        let tWall = (wgR - x) / ux;
+        // pick the smallest positive
+        let cand = [];
+        if (tTop > 1e-6) cand.push({t:tTop, kind:'top'});
+        if (tBot > 1e-6) cand.push({t:tBot, kind:'bot'});
+        if (tWall > 1e-6) cand.push({t:tWall, kind:'wall'});
+        cand.sort((a,b)=>a.t-b.t);
+        if (cand.length === 0) break;
+        const next = cand[0];
+        x += ux * next.t;
+        y += uy * next.t;
+        path.push({x, y});
+        if (next.kind === 'wall') break;
+        // TIR: flip y component
+        uy = -uy;
+      }
+      return path;
+    }
+
+    const pathL = traceTIR(gLx, gLy, pdx, pdy);
+    const pathR = traceTIR(gRx, gRy, pdx, pdy);
+
+    // Fill beam region between L and R paths
+    c.save();
+    c.beginPath();
+    c.rect(wgL, wgTop, wgR - wgL, wgBot - wgTop);
+    c.clip();
+    c.globalAlpha = 0.16;
+    c.fillStyle = col;
+    // Construct polygon: pathL forward + pathR reverse
+    c.beginPath();
+    c.moveTo(pathL[0].x, pathL[0].y);
+    for (let k = 1; k < pathL.length; k++) c.lineTo(pathL[k].x, pathL[k].y);
+    for (let k = pathR.length - 1; k >= 0; k--) c.lineTo(pathR[k].x, pathR[k].y);
+    c.closePath(); c.fill();
+    c.restore();
+
+    // Edge lines (within waveguide)
+    c.save();
+    c.beginPath();
+    c.rect(wgL, wgTop, wgR - wgL, wgBot - wgTop);
+    c.clip();
+    c.strokeStyle = col;
+    c.globalAlpha = 0.85;
+    c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(pathL[0].x, pathL[0].y);
+    for (let k = 1; k < pathL.length; k++) c.lineTo(pathL[k].x, pathL[k].y);
+    c.stroke();
+    c.beginPath(); c.moveTo(pathR[0].x, pathR[0].y);
+    for (let k = 1; k < pathR.length; k++) c.lineTo(pathR[k].x, pathR[k].y);
+    c.stroke();
+    c.restore();
+
+    // Label angle near incident beam start
+    c.save();
+    c.globalAlpha = 0.9;
+    c.fillStyle = col;
+    c.font = 'bold 10px Arial';
+    c.textAlign = 'center';
+    const angDeg = (Math.asin(sx) * 180/Math.PI).toFixed(0);
+    c.fillText('θ_x=' + (sx>=0?'+':'') + angDeg + '°', startCx, startCy + 12);
+    c.restore();
+  }
+
+  // Beam-width dimension on incident side (4mm reference)
+  // Show a horizontal 4mm scale below airBot
+  const refY = airBot + 2;
+  const refX1 = wgL + 8, refX2 = refX1 + beamPx;
+  c.strokeStyle = '#888'; c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(refX1, refY); c.lineTo(refX2, refY);
+  c.moveTo(refX1, refY-3); c.lineTo(refX1, refY+3);
+  c.moveTo(refX2, refY-3); c.lineTo(refX2, refY+3);
+  c.stroke();
+  c.fillStyle = '#aaa';
+  c.font = '9px Arial'; c.textAlign = 'center';
+  c.fillText(`${beamMM} mm beam`, (refX1+refX2)/2, refY + 11);
+}
+
+// ========== INIT ==========
+buildFovGrid();
+draw();
+</script>
+</body>
+</html>

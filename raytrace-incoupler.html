@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>3D 波導光追跡 for in-coupler — Waveguide TIR Ray Tracing (4:3 / 對角 FOV 30°)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#f6f7f9; color:#1a1a1a; font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif; min-height:100vh; padding:8px; }
+h1 { text-align:center; padding:6px 0 8px; font-size:18px; color:#1a3a6a; letter-spacing:0.5px; font-weight:600; }
+.wrap { display:flex; gap:10px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+canvas { background:#ffffff; border:1px solid #d8dde5; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+#cv3d { cursor:grab; }
+#cv3d:active { cursor:grabbing; }
+.col { display:flex; flex-direction:column; gap:8px; }
+.panel { background:#ffffff; border:1px solid #d8dde5; border-radius:8px; padding:10px 14px; width:230px; font-size:11.5px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.panel h2 { font-size:13px; color:#1a3a6a; margin-bottom:8px; border-bottom:1px solid #e3e7ee; padding-bottom:5px; font-weight:600; }
+.row { margin-bottom:8px; }
+.row label { display:block; font-size:11px; color:#5a6a7a; margin-bottom:2px; }
+.row .val { float:right; color:#c8741c; font-weight:bold; font-size:11px; }
+input[type=range] { width:100%; accent-color:#3a78c8; }
+select { width:100%; padding:3px 5px; background:#fff; color:#1a1a1a; border:1px solid #d0d6dd; border-radius:4px; font-size:11px; }
+.info { background:#f5f8fc; border:1px solid #dde5ee; border-radius:6px; padding:7px 9px; margin-top:8px; font-size:10.5px; line-height:1.55; color:#2a3a4a; }
+.info b { color:#c8741c; }
+.legend { margin-top:8px; font-size:10.5px; color:#2a3a4a; }
+.legend div { display:flex; align-items:center; gap:6px; margin:2px 0; }
+.legend .swatch { width:16px; height:4px; border-radius:2px; flex-shrink:0; }
+.legend .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.tip { margin-top:6px; font-size:10px; color:#7a8a9a; line-height:1.4; }
+.fov-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; padding:5px; background:#f0f3f8; border:1px solid #dde3ec; border-radius:5px; }
+.fov-cell { display:flex; align-items:center; justify-content:center; gap:4px; padding:3px 2px; background:#fff; border:1px solid #d8dde5; border-radius:3px; cursor:pointer; user-select:none; font-size:9.5px; }
+.fov-cell:hover { background:#e8eef6; }
+.fov-cell input { margin:0; cursor:pointer; }
+.fov-cell .cdot { width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.fov-btns { display:flex; gap:4px; margin-top:5px; }
+.fov-btns button { flex:1; padding:3px 4px; font-size:10px; background:#e8edf3; color:#1a3a6a; border:1px solid #c5ccd5; border-radius:3px; cursor:pointer; }
+.fov-btns button:hover { background:#d5dde8; }
+.view-btns { display:flex; gap:4px; }
+.view-btns button { flex:1; padding:5px 4px; font-size:11px; background:#1a3a6a; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+.view-btns button:hover { background:#2a5aaa; }
+.view-btns button.active { background:#c8741c; }
+</style>
+</head>
+<body>
+<h1>3D 波導光追跡 for in-coupler — Waveguide TIR Ray Tracing (4:3 / 對角 FOV 30°)</h1>
+<div class="wrap">
+<canvas id="cv3d" width="780" height="540"></canvas>
+<div class="col">
+  <div class="panel">
+    <h2>參數控制 Parameters</h2>
+    <div class="row">
+      <label>視角 View</label>
+      <div class="view-btns">
+        <button id="vPersp">透視</button>
+        <button id="vTop">上視 xy</button>
+        <button id="vSide">側視 xz</button>
+      </div>
+      <div class="view-btns" style="margin-top:4px;">
+        <button id="vFit" style="background:#3aa84a;">📐 Zoom Fit</button>
+      </div>
+    </div>
+    <div class="row">
+      <label>對角 FOV (&deg;) <span class="val" id="vFOV">30</span></label>
+      <input type="range" id="sFOV" min="10" max="50" step="1" value="30">
+    </div>
+    <div class="row">
+      <label>Aspect</label>
+      <select id="sAsp">
+        <option value="4:3" selected>4:3</option>
+        <option value="16:9">16:9</option>
+        <option value="3:2">3:2</option>
+        <option value="1:1">1:1</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>n (波導) <span class="val" id="vN">1.75</span></label>
+      <input type="range" id="sN" min="1.4" max="2.2" step="0.01" value="1.75">
+    </div>
+    <div class="row">
+      <label>&lambda; (nm) <span class="val" id="vLam">532</span></label>
+      <input type="range" id="sLam" min="380" max="780" step="5" value="532">
+    </div>
+    <div class="row">
+      <label>&Lambda;<sub>in</sub> (nm) <span class="val" id="vP">385</span></label>
+      <input type="range" id="sP" min="200" max="700" step="5" value="385">
+    </div>
+    <div class="row">
+      <label>光束寬 (mm) <span class="val" id="vBW">4</span></label>
+      <input type="range" id="sBW" min="1" max="8" step="0.5" value="4">
+    </div>
+    <div class="row">
+      <label>波導厚 d (mm) <span class="val" id="vD">0.5</span></label>
+      <input type="range" id="sD" min="0.3" max="2.0" step="0.05" value="0.5">
+    </div>
+    <div class="row">
+      <label>顯示 FOV (3×3 取樣)</label>
+      <div class="fov-grid" id="fovGrid"></div>
+      <div class="fov-btns">
+        <button id="btnAll">全選</button>
+        <button id="btnNone">全清</button>
+        <button id="btnCenter">僅中心</button>
+      </div>
+    </div>
+    <div class="info" id="info">…</div>
+    <div class="legend">
+      <div><span class="swatch" style="background:#d96666"></span> &minus;FOV<sub>x</sub> ray (kx&lt;0)</div>
+      <div><span class="swatch" style="background:#666666"></span> 中心 ray (kx=0)</div>
+      <div><span class="swatch" style="background:#3a78c8"></span> +FOV<sub>x</sub> ray (kx&gt;0)</div>
+      <div><span class="swatch" style="background:#888"></span> 波導 (n)</div>
+      <div><span class="swatch" style="background:#bcd"></span> In-coupler 光柵</div>
+    </div>
+    <div class="tip">滑鼠拖曳：旋轉視角｜滾輪：縮放</div>
+  </div>
+  <canvas id="cvKxKy" width="240" height="240"></canvas>
+</div>
+</div>
+
+<script>
+// ===== ELEMENTS =====
+const cv3d = document.getElementById('cv3d');
+const ctx = cv3d.getContext('2d');
+const W = cv3d.width, H = cv3d.height;
+
+const cvK = document.getElementById('cvKxKy');
+const ctxK = cvK.getContext('2d');
+
+const sFOV = document.getElementById('sFOV');
+const sAsp = document.getElementById('sAsp');
+const sN   = document.getElementById('sN');
+const sLam = document.getElementById('sLam');
+const sP   = document.getElementById('sP');
+const sBW  = document.getElementById('sBW');
+const sD   = document.getElementById('sD');
+const vFOV = document.getElementById('vFOV');
+const vN   = document.getElementById('vN');
+const vLam = document.getElementById('vLam');
+const vP   = document.getElementById('vP');
+const vBW  = document.getElementById('vBW');
+const vD   = document.getElementById('vD');
+const info = document.getElementById('info');
+
+[sFOV, sAsp, sN, sLam, sP, sBW, sD].forEach(s => s.addEventListener('input', draw));
+
+// ===== 9-FOV CHECKBOX GRID =====
+const fovGrid = document.getElementById('fovGrid');
+const fovChecks = {}; // key "i_j" → checkbox
+function buildFovGrid() {
+  // Top row j=+1 (upper FOV), middle j=0, bottom j=-1
+  for (let jj = 1; jj >= -1; jj--) {
+    for (let ii = -1; ii <= 1; ii++) {
+      const lbl = document.createElement('label');
+      lbl.className = 'fov-cell';
+      lbl.title = `i=${ii>=0?'+':''}${ii}, j=${jj>=0?'+':''}${jj}`;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.addEventListener('change', draw);
+      const dot = document.createElement('span');
+      dot.className = 'cdot';
+      dot.style.background = rayColor(ii, jj);
+      lbl.appendChild(cb);
+      lbl.appendChild(dot);
+      fovGrid.appendChild(lbl);
+      fovChecks[`${ii}_${jj}`] = cb;
+    }
+  }
+}
+document.getElementById('btnAll').addEventListener('click', () => {
+  Object.values(fovChecks).forEach(cb => cb.checked = true); draw();
+});
+document.getElementById('btnNone').addEventListener('click', () => {
+  Object.values(fovChecks).forEach(cb => cb.checked = false); draw();
+});
+document.getElementById('btnCenter').addEventListener('click', () => {
+  Object.entries(fovChecks).forEach(([k, cb]) => cb.checked = (k === '0_0'));
+  draw();
+});
+
+// ===== VIEW PRESET BUTTONS =====
+function setActiveView(id) {
+  ['vPersp','vTop','vSide'].forEach(b => {
+    const el = document.getElementById(b);
+    if (el) el.classList.toggle('active', b === id);
+  });
+}
+
+// Auto fit-to-canvas: project waveguide+display bbox, set zoom and pan
+function fitToCanvas(margin) {
+  margin = margin || 0.85;
+  const dMM = parseFloat(sD.value);
+  // Bounding-box corners we want to fit. Include the incident beam start at z=-2.6
+  // so beams are visible below the waveguide.
+  const corners = [
+    [wgX0, wgY0, 0], [wgX1, wgY0, 0], [wgX1, wgY1, 0], [wgX0, wgY1, 0],
+    [wgX0, wgY0, dMM], [wgX1, wgY0, dMM], [wgX1, wgY1, dMM], [wgX0, wgY1, dMM],
+    [inCx, inCy, -2.6]
+  ];
+  const cz = Math.cos(rotZ), sz = Math.sin(rotZ);
+  const cxr = Math.cos(rotX), sxr = Math.sin(rotX);
+  let minX1 = Infinity, maxX1 = -Infinity;
+  let minZ2 = Infinity, maxZ2 = -Infinity;
+  for (const c of corners) {
+    const x = c[0], y = c[1], z = c[2] * zStretch;
+    const x1 = x*cz - y*sz;
+    const y1 = x*sz + y*cz;
+    const z2 = y1*sxr + z*cxr;
+    if (x1 < minX1) minX1 = x1;
+    if (x1 > maxX1) maxX1 = x1;
+    if (z2 < minZ2) minZ2 = z2;
+    if (z2 > maxZ2) maxZ2 = z2;
+  }
+  const sceneW = (maxX1 - minX1) * baseScale;
+  const sceneH = (maxZ2 - minZ2) * baseScale;
+  if (sceneW > 0 && sceneH > 0) {
+    zoom = Math.min((W * margin) / sceneW, (H * margin) / sceneH);
+    const cenX1 = (minX1 + maxX1) / 2;
+    const cenZ2 = (minZ2 + maxZ2) / 2;
+    panX = -cenX1 * baseScale * zoom;
+    panY =  cenZ2 * baseScale * zoom;
+  }
+}
+
+document.getElementById('vPersp').addEventListener('click', () => {
+  rotX = -0.55; rotZ = 0.42;
+  setActiveView('vPersp'); fitToCanvas(); draw();
+});
+document.getElementById('vTop').addEventListener('click', () => {
+  rotX = -Math.PI/2 + 0.001; rotZ = 0;
+  setActiveView('vTop'); fitToCanvas(); draw();
+});
+document.getElementById('vSide').addEventListener('click', () => {
+  rotX = 0; rotZ = 0;
+  setActiveView('vSide'); fitToCanvas(); draw();
+});
+document.getElementById('vFit').addEventListener('click', () => {
+  fitToCanvas(); draw();
+});
+
+// ===== 3D ROTATION STATE =====
+let rotX = -0.55;     // tilt down (negative = look from above)
+let rotZ = 0.42;      // azimuth
+let zoom = 1.05;
+let panX = 0, panY = 0;  // canvas-pixel translation for fit-to-canvas
+let dragging = false, lastMX, lastMY;
+cv3d.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+cv3d.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  rotZ += (e.clientX - lastMX) * 0.008;
+  rotX += (e.clientY - lastMY) * 0.008;
+  rotX = Math.max(-Math.PI/2 + 0.05, Math.min(0, rotX));
+  lastMX = e.clientX; lastMY = e.clientY;
+  draw();
+});
+cv3d.addEventListener('mouseup', () => dragging = false);
+cv3d.addEventListener('mouseleave', () => dragging = false);
+cv3d.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom *= e.deltaY > 0 ? 0.93 : 1.07;
+  zoom = Math.max(0.4, Math.min(2.5, zoom));
+  draw();
+}, {passive:false});
+
+// ===== 3D PROJECTION =====
+// World coordinates: x along waveguide length (right), y across width (depth into page),
+// z vertical (up). Display sits below waveguide.
+// Visual scales (mm → world unit; vertical exaggerated for TIR clarity)
+const baseScale = 5.2;   // pixels per world unit (~horizontal)
+const zStretch = 14.0;   // vertical mm exaggeration so TIR is visible
+
+const cxC = W * 0.42;
+const cyC = H * 0.6;
+
+function project(xMM, yMM, zMM) {
+  // Convert to "world units" (x,y use mmPxXY, z exaggerated)
+  let x = xMM, y = yMM, z = zMM * zStretch;
+  // Rotate around z (azimuth)
+  const cz = Math.cos(rotZ), sz = Math.sin(rotZ);
+  let x1 = x*cz - y*sz;
+  let y1 = x*sz + y*cz;
+  let z1 = z;
+  // Rotate around x (tilt)
+  const cx = Math.cos(rotX), sx = Math.sin(rotX);
+  let y2 = y1*cx - z1*sx;
+  let z2 = y1*sx + z1*cx;
+  return {
+    px: cxC + panX + x1 * baseScale * zoom,
+    py: cyC + panY - z2 * baseScale * zoom,
+    depth: y2
+  };
+}
+
+// ===== 3D PRIMITIVES =====
+function line(x1,y1,z1, x2,y2,z2, color, width, dash) {
+  const a = project(x1,y1,z1), b = project(x2,y2,z2);
+  ctx.beginPath();
+  ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py);
+  ctx.strokeStyle = color; ctx.lineWidth = width;
+  if (dash) ctx.setLineDash(dash);
+  ctx.stroke();
+  if (dash) ctx.setLineDash([]);
+}
+function arrow(x1,y1,z1, x2,y2,z2, color, width) {
+  const a = project(x1,y1,z1), b = project(x2,y2,z2);
+  ctx.beginPath();
+  ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py);
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+  const ang = Math.atan2(b.py - a.py, b.px - a.px);
+  const hd = 8;
+  ctx.beginPath();
+  ctx.moveTo(b.px, b.py);
+  ctx.lineTo(b.px - hd*Math.cos(ang-0.35), b.py - hd*Math.sin(ang-0.35));
+  ctx.lineTo(b.px - hd*Math.cos(ang+0.35), b.py - hd*Math.sin(ang+0.35));
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+}
+function quad(verts, fill, stroke, lw) {
+  ctx.beginPath();
+  for (let i = 0; i < verts.length; i++) {
+    const p = project(verts[i][0], verts[i][1], verts[i][2]);
+    if (i === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+}
+function text(xMM, yMM, zMM, txt, color, font, align, ox, oy) {
+  const p = project(xMM, yMM, zMM);
+  ctx.fillStyle = color || '#1a1a1a';
+  ctx.font = font || '12px Arial';
+  ctx.textAlign = align || 'left';
+  ctx.fillText(txt, p.px + (ox||0), p.py + (oy||0));
+}
+
+// ===== WAVEGUIDE GEOMETRY (mm) =====
+const wgX0 = 0, wgX1 = 70;          // length 70mm
+const wgY0 = -8, wgY1 = 8;          // width 16mm
+// In-coupler region (on bottom face z=0)
+const inCx = 8, inCy = 0;            // center
+const inCsize = 5;                   // 5x5mm
+
+// ===== FOV COLORS (3 colors per row) =====
+function rayColor(i, j) {
+  // i ∈ {-1,0,+1}: kx direction; j ∈ {-1,0,+1}: ky direction
+  let b;
+  if (i < 0)      b = { h: 0,   s: 75, l: 48 };  // red
+  else if (i > 0) b = { h: 215, s: 75, l: 45 };  // blue
+  else            b = { h: 30,  s: 85, l: 50 };  // orange (center)
+  const dl = j * 8;
+  return `hsl(${b.h}, ${b.s}%, ${b.l + dl}%)`;
+}
+
+// ===== MAIN DRAW =====
+function draw() {
+  const fovDiagDeg = parseFloat(sFOV.value);
+  const aspStr = sAsp.value;
+  const [aw, ah] = aspStr.split(':').map(Number);
+  const nIdx = parseFloat(sN.value);
+  const lam = parseFloat(sLam.value);
+  const period = parseFloat(sP.value);
+  const beamMM = parseFloat(sBW.value);
+  const dMM = parseFloat(sD.value);
+
+  vFOV.textContent = fovDiagDeg;
+  vN.textContent = nIdx.toFixed(2);
+  vLam.textContent = lam;
+  vP.textContent = period;
+  vBW.textContent = beamMM;
+  vD.textContent = dMM.toFixed(2);
+
+  // Grating G along +x (φG=0)
+  const G = lam / period;
+  const Gx = G, Gy = 0;
+
+  // FOV: 4:3 / diag
+  const tanDiag = Math.tan(fovDiagDeg/2 * Math.PI/180);
+  const norm = Math.sqrt(aw*aw + ah*ah);
+  const tanH = tanDiag * aw / norm;
+  const tanV = tanDiag * ah / norm;
+  const halfH = Math.atan(tanH);
+  const halfV = Math.atan(tanV);
+  const sinH = Math.sin(halfH);
+  const sinV = Math.sin(halfV);
+
+  // Build 9 samples
+  const samples9 = [];
+  for (let j = -1; j <= 1; j++) {
+    for (let i = -1; i <= 1; i++) {
+      const sx = i * sinH;
+      const sy = j * sinV;
+      const kxw = sx + Gx;
+      const kyw = sy + Gy;
+      const kperp2 = kxw*kxw + kyw*kyw;
+      const kz_wg2 = nIdx*nIdx - kperp2;
+      const propagates = kz_wg2 > 0;
+      const kz_wg = propagates ? Math.sqrt(kz_wg2) : 0;
+      const tirOK = kperp2 > 1.0 + 1e-6;
+      samples9.push({ i, j, sx, sy, kxw, kyw, kz_wg, kperp2, propagates, tirOK,
+                      color: rayColor(i, j) });
+    }
+  }
+
+  // Filter by FOV checkbox state
+  const displayed = samples9.filter(s => {
+    const cb = fovChecks[`${s.i}_${s.j}`];
+    return cb && cb.checked;
+  });
+
+  // Info
+  let html = `<b>FOV ${fovDiagDeg}° / ${aspStr}</b>　θ_h=±${(halfH*180/Math.PI).toFixed(1)}° θ_v=±${(halfV*180/Math.PI).toFixed(1)}°<br>`;
+  html += `<b>|G|/k₀</b>=${G.toFixed(3)}　<b>n·k₀</b>=${nIdx.toFixed(2)}<br>`;
+  html += `TIR 臨界角 = ${(Math.asin(1/nIdx)*180/Math.PI).toFixed(1)}°<br>`;
+  let nProp = 0, nTIR = 0;
+  for (const s of samples9) { if (s.propagates) nProp++; if (s.propagates && s.tirOK) nTIR++; }
+  html += `<br>9 fields: 進入波導 ${nProp}/9　全 TIR ${nTIR}/9<br>`;
+  const c = samples9[4];
+  if (c.propagates) {
+    const θwg = Math.atan2(Math.sqrt(c.kperp2), c.kz_wg) * 180/Math.PI;
+    html += `中心 ray θ_wg = <b>${θwg.toFixed(1)}°</b>`;
+  }
+  info.innerHTML = html;
+
+  draw3D(nIdx, dMM, beamMM, displayed, samples9, sinH, sinV, Gx, Gy, period, lam);
+  drawKxKy(nIdx, sinH, sinV, Gx, Gy, samples9);
+}
+
+// ===== 3D SCENE =====
+function draw3D(n, dMM, beamMM, displayed, all9, sinH, sinV, Gx, Gy, period, lam) {
+  ctx.clearRect(0, 0, W, H);
+
+  // Light page background with subtle tint so we know canvas is alive
+  ctx.fillStyle = '#fbfcfd';
+  ctx.fillRect(0, 0, W, H);
+
+  // 1) Coordinate axes (small) at bottom-left of canvas
+  drawAxesGuide();
+
+  // 2) Waveguide BOTTOM face (z=0) — drawn first (back-most)
+  quad([
+    [wgX0, wgY0, 0], [wgX1, wgY0, 0],
+    [wgX1, wgY1, 0], [wgX0, wgY1, 0]
+  ], 'rgba(170,195,220,0.42)', '#2a5a8a', 1.6);
+
+  // 3) Waveguide TOP face (z=d) — drawn after so it appears in front
+  quad([
+    [wgX0, wgY0, dMM], [wgX1, wgY0, dMM],
+    [wgX1, wgY1, dMM], [wgX0, wgY1, dMM]
+  ], 'rgba(190,210,232,0.32)', '#3a6aa0', 1.4);
+
+  // 4) Side edges (4 vertical pillars) — clearly visible
+  line(wgX0, wgY0, 0, wgX0, wgY0, dMM, '#3a6aa0', 1.4);
+  line(wgX1, wgY0, 0, wgX1, wgY0, dMM, '#3a6aa0', 1.4);
+  line(wgX1, wgY1, 0, wgX1, wgY1, dMM, '#3a6aa0', 1.4);
+  line(wgX0, wgY1, 0, wgX0, wgY1, dMM, '#3a6aa0', 1.4);
+
+  // 4b) Front-facing visible side faces (subtle fill to give 3D depth cue)
+  // Front face (y = wgY1): the one closest to viewer
+  quad([
+    [wgX0, wgY1, 0], [wgX1, wgY1, 0],
+    [wgX1, wgY1, dMM], [wgX0, wgY1, dMM]
+  ], 'rgba(170,195,220,0.28)', '#3a6aa0', 1.0);
+  // Right face (x = wgX1)
+  quad([
+    [wgX1, wgY0, 0], [wgX1, wgY1, 0],
+    [wgX1, wgY1, dMM], [wgX1, wgY0, dMM]
+  ], 'rgba(160,185,215,0.22)', '#3a6aa0', 1.0);
+
+  // 5) In-coupler grating region on bottom face
+  drawInCoupler(period, lam);
+
+  // 6) (Display panel removed — beams come in from below already collimated)
+
+  // 7) Trace the rays — sort by depth and draw back-to-front
+  const rayDraws = [];
+  for (const s of displayed) {
+    if (!s.propagates) continue;
+    rayDraws.push({ sample: s, depth: s.j * 0.5 + s.i * 0.1 });
+  }
+
+  // Draw incident beams first (under waveguide)
+  for (const rd of rayDraws) drawIncidentBeam(rd.sample, beamMM, dMM);
+  // Then in-waveguide TIR
+  for (const rd of rayDraws) drawWaveguideRay(rd.sample, dMM, beamMM, n);
+
+  // 8) Labels & annotations
+  ctx.fillStyle = '#1a3a6a';
+  ctx.font = 'bold 13px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('3D Ray Tracing — In-coupler + TIR propagation', 14, 22);
+  ctx.fillStyle = '#5a6a7a';
+  ctx.font = '11px Arial';
+  ctx.fillText('Z = 厚度 (放大顯示) | X = 沿波導 | Y = 寬度', 14, 38);
+
+  // Waveguide label
+  text(wgX1 - 2, wgY1, dMM + 0.05, `波導 n=${n.toFixed(2)}`, '#3a4a5a', 'bold 12px Arial', 'right', 0, -4);
+  text(wgX1 - 2, wgY1, 0, `d = ${dMM.toFixed(2)} mm`, '#3a4a5a', '11px Arial', 'right', 0, 16);
+
+  // X-axis tick at 50mm to give scale
+  const tickXmm = 50;
+  if (tickXmm < wgX1) {
+    line(tickXmm, wgY1 + 1, 0, tickXmm, wgY1 + 3, 0, '#888', 1);
+    text(tickXmm, wgY1 + 4, 0, `${tickXmm} mm`, '#888', '9px Arial', 'center', 0, 14);
+  }
+}
+
+function drawAxesGuide() {
+  ctx.save();
+  const ax = 55, ay = H - 75;
+  const armLen = 28;
+  // Hide an axis if its actual projected magnitude on screen is below this threshold —
+  // happens when the axis is roughly perpendicular to the view (e.g. z in top view).
+  const visibleThresh = 4;
+
+  const o  = project(0, 0, 0);
+  // Sample inputs sized so each axis projects to similar best-case magnitude on screen.
+  const ex = project(2, 0, 0);
+  const ey = project(0, 2, 0);
+  const ez = project(0, 0, 2 / zStretch);  // compensate zStretch so best-case ≈ x/y best-case
+
+  function unitTo(p) {
+    const dx = p.px - o.px, dy = p.py - o.py;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < visibleThresh) return null;
+    return { x: dx/d * armLen, y: dy/d * armLen };
+  }
+  const xV = unitTo(ex);
+  const yV = unitTo(ey);
+  const zV = unitTo(ez);
+
+  function arrow2(x1, y1, x2, y2, color, label) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 6*Math.cos(ang - 0.35), y2 - 6*Math.sin(ang - 0.35));
+    ctx.lineTo(x2 - 6*Math.cos(ang + 0.35), y2 - 6*Math.sin(ang + 0.35));
+    ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, x2 + 4, y2 + 3);
+  }
+  if (xV) arrow2(ax, ay, ax + xV.x, ay + xV.y, '#c8741c', 'x');
+  if (yV) arrow2(ax, ay, ax + yV.x, ay + yV.y, '#3a78c8', 'y');
+  if (zV) arrow2(ax, ay, ax + zV.x, ay + zV.y, '#3aa84a', 'z');
+
+  // For axes that point ~into/out of screen, draw a small "dot" at origin labeled with the axis name
+  function dotLabel(visible, color, label, dx) {
+    if (visible) return;
+    ctx.beginPath();
+    ctx.arc(ax, ay, 4, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText(label, ax + 6 + dx, ay + 4);
+  }
+  // Stack them in the legend area below origin
+  let legendY = ay + 18;
+  function noteAxis(visible, color, label) {
+    if (visible) return;
+    ctx.fillStyle = color;
+    ctx.font = '10px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('· ' + label + ' ⊥ 螢幕', ax - 4, legendY);
+    legendY += 12;
+  }
+  noteAxis(xV, '#c8741c', 'x');
+  noteAxis(yV, '#3a78c8', 'y');
+  noteAxis(zV, '#3aa84a', 'z');
+  ctx.restore();
+}
+
+function drawInCoupler(period, lam) {
+  // Circular in-coupler on z=0 plane (radius = inCsize/2)
+  const r = inCsize / 2;
+  const N = 48;
+  // Filled circle
+  ctx.beginPath();
+  for (let k = 0; k <= N; k++) {
+    const a = (k/N) * Math.PI*2;
+    const p = project(inCx + r*Math.cos(a), inCy + r*Math.sin(a), 0.001);
+    if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(70,110,200,0.28)';
+  ctx.fill();
+  ctx.strokeStyle = '#2a5aaa';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  // Grating stripes inside the circle (along y, perpendicular to G along x)
+  // Clip to projected circle
+  ctx.save();
+  ctx.beginPath();
+  for (let k = 0; k <= N; k++) {
+    const a = (k/N) * Math.PI*2;
+    const p = project(inCx + r*Math.cos(a), inCy + r*Math.sin(a), 0.001);
+    if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  ctx.clip();
+  for (let xs = inCx - r; xs <= inCx + r; xs += 0.3) {
+    line(xs, inCy - r, 0.001, xs, inCy + r, 0.001, 'rgba(40,80,160,0.65)', 0.7);
+  }
+  ctx.restore();
+
+  // Label below
+  text(inCx, inCy + r + 0.4, 0, `In-coupler ⌀${inCsize}mm (Λ=${period}nm)`, '#2a4a8a', '10px Arial', 'center', 0, 12);
+}
+
+
+// ===== HELPERS for cylindrical beam =====
+// Draw a HORIZONTAL circle (in xy plane at z = cz) — avoids zStretch artifact
+function drawHorizontalCircle(cx, cy, cz, r, color, fillAlpha, strokeAlpha) {
+  const N = 36;
+  ctx.save();
+  ctx.beginPath();
+  for (let k = 0; k <= N; k++) {
+    const a = (k/N) * Math.PI*2;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    const p = project(x, y, cz);
+    if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.closePath();
+  if (fillAlpha > 0) {
+    ctx.fillStyle = color;
+    ctx.globalAlpha = fillAlpha;
+    ctx.fill();
+  }
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = strokeAlpha;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ===== INCIDENT BEAM (round 4mm cylinder, xy-plane circle footprint) =====
+function drawIncidentBeam(s, beamMM, dMM) {
+  const col = s.color;
+  const sx = s.sx, sy = s.sy;
+  const kz_air = Math.sqrt(Math.max(0, 1 - sx*sx - sy*sy));
+  if (kz_air <= 0) return;
+  const startZ = -2.6;
+  const t = -startZ / kz_air;
+  const xStart = inCx - sx * t;
+  const yStart = inCy - sy * t;
+  const r = beamMM / 2;
+
+  // Cap circles — drawn flat in xy plane (clean 4mm round, no z-stretch artifact)
+  drawHorizontalCircle(xStart, yStart, startZ, r, col, 0.10, 0.7);
+  drawHorizontalCircle(inCx, inCy, 0, r, col, 0.10, 0.7);
+
+  // Dense edge rays around the full circumference of the round beam.
+  // Each edge ray is parallel to the beam, offset by (r·cosθ, r·sinθ, 0).
+  const NEdges = 24;
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 0.7;
+  for (let k = 0; k < NEdges; k++) {
+    const ang = (k / NEdges) * Math.PI * 2;
+    const ox = r * Math.cos(ang);
+    const oy = r * Math.sin(ang);
+    line(xStart + ox, yStart + oy, startZ,
+         inCx + ox,    inCy + oy,    0, col, 0.7);
+  }
+  ctx.restore();
+
+  // Center ray (solid, arrowhead at grating)
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+  arrow(xStart, yStart, startZ, inCx, inCy, 0, col, 2.0);
+  ctx.restore();
+}
+
+// ===== IN-WAVEGUIDE RAY (TIR ZIGZAG) — cylindrical beam with 4 edges =====
+function tracePathTIR(x0, y0, z0, dirX, dirY, dirZ, dMM) {
+  const path = [{x:x0, y:y0, z:z0}];
+  let x = x0, y = y0, z = z0;
+  let ux = dirX, uy = dirY, uz = dirZ;
+  // Trace until ray exits the waveguide volume (x or y wall hit) — no bounce-count cap,
+  // so every ray propagates the same x-distance regardless of how many TIR bounces it takes.
+  let safety = 0;
+  while (safety < 1000) {
+    safety++;
+    let candidates = [];
+    if (uz > 1e-9) {
+      const t = (dMM - z) / uz;
+      if (t > 1e-7) candidates.push({t, kind:'top'});
+    } else if (uz < -1e-9) {
+      const t = (0 - z) / uz;
+      if (t > 1e-7) candidates.push({t, kind:'bot'});
+    }
+    if (ux > 1e-9) {
+      const t = (wgX1 - x) / ux;
+      if (t > 1e-7) candidates.push({t, kind:'wallX'});
+    }
+    if (uy > 1e-9) {
+      const t = (wgY1 - y) / uy;
+      if (t > 1e-7) candidates.push({t, kind:'wallYp'});
+    }
+    if (uy < -1e-9) {
+      const t = (wgY0 - y) / uy;
+      if (t > 1e-7) candidates.push({t, kind:'wallYn'});
+    }
+    candidates.sort((a,b)=>a.t-b.t);
+    if (candidates.length === 0) break;
+    const next = candidates[0];
+    x += ux * next.t;
+    y += uy * next.t;
+    z += uz * next.t;
+    path.push({x, y, z, bounce: (next.kind === 'top' || next.kind === 'bot')});
+    if (next.kind === 'wallX' || next.kind === 'wallYp' || next.kind === 'wallYn') break;
+    uz = -uz;
+  }
+  return path;
+}
+
+function drawWaveguideRay(s, dMM, beamMM, n) {
+  const col = s.color;
+  const dirX = s.kxw / n, dirY = s.kyw / n, dirZ = s.kz_wg / n;
+  const r = beamMM / 2;
+
+  // Dense edge rays around the full circumference of the round 4mm footprint on
+  // the in-coupler (z=0 plane). Each edge ray starts at (inCx + r·cosθ, inCy + r·sinθ, 0)
+  // and propagates with (dirX,dirY,dirZ). They TIR-bounce independently, forming a tube
+  // of light in 3D that visualises the entire circular beam cross-section.
+  const NEdges = 24;
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 0.7;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let k = 0; k < NEdges; k++) {
+    const ang = (k / NEdges) * Math.PI * 2;
+    const ox = r * Math.cos(ang);
+    const oy = r * Math.sin(ang);
+    const path = tracePathTIR(inCx + ox, inCy + oy, 0, dirX, dirY, dirZ, dMM);
+    ctx.beginPath();
+    for (let i = 0; i < path.length; i++) {
+      const p = project(path[i].x, path[i].y, path[i].z);
+      if (i === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Center ray (solid bold)
+  const centerPath = tracePathTIR(inCx, inCy, 0, dirX, dirY, dirZ, dMM);
+  ctx.save();
+  ctx.strokeStyle = col;
+  ctx.globalAlpha = 0.95;
+  ctx.lineWidth = 1.9;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (let k = 0; k < centerPath.length; k++) {
+    const p = project(centerPath[k].x, centerPath[k].y, centerPath[k].z);
+    if (k === 0) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // TIR bounce dots only on center ray (avoid clutter)
+  ctx.save();
+  for (let k = 1; k < centerPath.length; k++) {
+    if (centerPath[k].bounce) {
+      const p = project(centerPath[k].x, centerPath[k].y, centerPath[k].z);
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(p.px, p.py, 2.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// ===== K-SPACE TOP VIEW (small panel) =====
+function drawKxKy(n, sinH, sinV, Gx, Gy, samples) {
+  const W2 = cvK.width, H2 = cvK.height;
+  const cx = W2/2, cy = H2/2;
+  const c = ctxK;
+  c.clearRect(0, 0, W2, H2);
+  c.fillStyle = '#ffffff';
+  c.fillRect(0, 0, W2, H2);
+
+  c.fillStyle = '#1a3a6a';
+  c.font = 'bold 12px Arial';
+  c.textAlign = 'center';
+  c.fillText('kx–ky 上視圖 (4:3 FOV + G)', cx, 14);
+
+  const Gmag = Math.sqrt(Gx*Gx + Gy*Gy);
+  const maxR = Math.max(n, Gmag + sinH) + 0.2;
+  const sc = Math.min(W2, H2-30) * 0.42 / maxR;
+
+  // Axes
+  c.strokeStyle = '#bbb'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(15, cy); c.lineTo(W2-15, cy); c.stroke();
+  c.beginPath(); c.moveTo(cx, 22); c.lineTo(cx, H2-12); c.stroke();
+  c.fillStyle = '#888'; c.font = 'italic 10px Arial';
+  c.textAlign = 'left'; c.fillText('kx', W2-22, cy-3);
+  c.textAlign = 'center'; c.fillText('ky', cx+10, 32);
+
+  // TIR annulus
+  c.save();
+  c.fillStyle = 'rgba(255,180,180,0.20)';
+  c.beginPath();
+  c.arc(cx, cy, n*sc, 0, Math.PI*2);
+  c.arc(cx, cy, sc, 0, Math.PI*2, true);
+  c.closePath(); c.fill();
+  c.restore();
+
+  // Air circle
+  c.strokeStyle = '#3a78c8'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(cx, cy, sc, 0, Math.PI*2); c.stroke();
+  c.fillStyle = '#3a78c8'; c.font = '9px Arial';
+  c.textAlign = 'left'; c.fillText('k₀', cx + sc + 2, cy - 2);
+
+  // nk₀ circle
+  c.strokeStyle = '#c8741c'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(cx, cy, n*sc, 0, Math.PI*2); c.stroke();
+  c.fillStyle = '#c8741c';
+  c.fillText('nk₀', cx + n*sc + 2, cy - 2);
+
+  // FOV box (incident)
+  c.strokeStyle = '#3aa84a'; c.lineWidth = 1.3;
+  c.fillStyle = 'rgba(58,168,74,0.10)';
+  c.fillRect(cx - sinH*sc, cy - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([3,2]);
+  c.strokeRect(cx - sinH*sc, cy - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.setLineDash([]);
+  c.fillStyle = '#3aa84a'; c.font = 'bold 9px Arial'; c.textAlign = 'center';
+  c.fillText('FOV', cx, cy + sinV*sc + 11);
+
+  // FOV+G box (waveguide)
+  c.strokeStyle = '#c85020';
+  c.fillStyle = 'rgba(200,80,32,0.10)';
+  c.fillRect(cx + Gx*sc - sinH*sc, cy - Gy*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.strokeRect(cx + Gx*sc - sinH*sc, cy - Gy*sc - sinV*sc, 2*sinH*sc, 2*sinV*sc);
+  c.fillStyle = '#c85020';
+  c.fillText('FOV+G', cx + Gx*sc, cy - Gy*sc + sinV*sc + 11);
+
+  // G arrow
+  c.strokeStyle = '#3aa84a'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Gx*sc, cy - Gy*sc); c.stroke();
+  // arrow head
+  const ang = Math.atan2(-Gy*sc, Gx*sc);
+  const hd = 6;
+  c.beginPath();
+  c.moveTo(cx + Gx*sc, cy - Gy*sc);
+  c.lineTo(cx + Gx*sc - hd*Math.cos(ang-0.35), cy - Gy*sc - hd*Math.sin(ang-0.35));
+  c.lineTo(cx + Gx*sc - hd*Math.cos(ang+0.35), cy - Gy*sc - hd*Math.sin(ang+0.35));
+  c.closePath(); c.fillStyle = '#3aa84a'; c.fill();
+  c.fillStyle = '#3aa84a'; c.font = 'bold 11px Arial'; c.textAlign = 'left';
+  c.fillText('G', cx + Gx*sc*0.5 + 4, cy - Gy*sc*0.5 - 4);
+
+  // 9 sample points
+  for (const s of samples) {
+    const px = cx + s.sx*sc, py = cy - s.sy*sc;
+    const px2 = cx + s.kxw*sc, py2 = cy - s.kyw*sc;
+    c.fillStyle = s.color;
+    c.beginPath(); c.arc(px, py, 2.5, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(px2, py2, 4, 0, Math.PI*2); c.fill();
+    if (!s.tirOK || !s.propagates) {
+      c.strokeStyle = '#d22'; c.lineWidth = 1;
+      c.beginPath(); c.arc(px2, py2, 6, 0, Math.PI*2); c.stroke();
+    }
+  }
+}
+
+// init
+buildFovGrid();
+setActiveView('vPersp');
+fitToCanvas();
+draw();
+</script>
+</body>
+</html>
