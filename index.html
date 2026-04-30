@@ -143,7 +143,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
     <a href="#raytrace" class="btn btn-ghost">查看所有模組</a>
   </div>
   <div class="stats">
-    <div class="stat"><div class="num">6</div><div class="label">Interactive Modules</div></div>
+    <div class="stat"><div class="num">7</div><div class="label">Interactive Modules</div></div>
     <div class="stat"><div class="num">3D</div><div class="label">Ray Tracing</div></div>
     <div class="stat"><div class="num">k-space</div><div class="label">Momentum Analysis</div></div>
     <div class="stat"><div class="num">9×9</div><div class="label">Eyebox Grid</div></div>
@@ -195,14 +195,24 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
     <p class="section-desc">在實空間中追蹤光在波導內的傳播路徑，從單一入射光柵到三道光柵的完整擴瞳系統。</p>
   </div>
   <div class="modules">
+    <a href="raytrace-basic.html" class="mod-card" target="_blank">
+      <div class="mod-thumb"><span class="mod-cat rt">Ray Tracing</span>
+        <svg viewBox="0 0 240 120"><rect x="20" y="50" width="200" height="30" rx="2" fill="#5ee0ff" fill-opacity="0.08" stroke="#5ee0ff" stroke-opacity="0.4"/><rect x="80" y="50" width="80" height="30" fill="#5577ff" fill-opacity="0.25" stroke="#5577ff" stroke-opacity="0.5"/><line x1="120" y1="20" x2="120" y2="50" stroke="#ffd866" stroke-width="1.4"/><polyline points="120,50 100,80 140,80 100,80 140,80 120,80 120,100" fill="none" stroke="#ffd866" stroke-width="1.2" opacity="0.85"/><text x="120" y="118" fill="#7eb8ff" font-size="9" text-anchor="middle">grating eq.</text></svg>
+      </div>
+      <div class="mod-body">
+        <h4>波導光追跡基礎</h4>
+        <p>從光柵方程式 (mλ = Λ sin θ) 與 Snell 定律出發，視覺化光線進入波導後的全反射行為。可調折射率、光柵週期、波導厚度。</p>
+        <div class="mod-meta"><span>Module 01 · Fundamentals</span><span class="arrow">啟動 →</span></div>
+      </div>
+    </a>
     <a href="raytrace-incoupler.html" class="mod-card" target="_blank">
       <div class="mod-thumb"><span class="mod-cat rt">Ray Tracing</span>
         <svg viewBox="0 0 240 120"><rect x="20" y="40" width="200" height="50" rx="3" fill="#5ee0ff" fill-opacity="0.08" stroke="#5ee0ff" stroke-opacity="0.4"/><rect x="40" y="40" width="30" height="50" fill="#5ee0ff" fill-opacity="0.2"/><polyline points="55,15 55,45 75,85 95,45 115,85 135,45 155,85 175,45 195,85 215,55" fill="none" stroke="#5ee0ff" stroke-width="1.2"/></svg>
       </div>
       <div class="mod-body">
-        <h4>In-coupler 光線追跡</h4>
-        <p>單一入射光柵與全反射 (TIR) 的最簡示範。FOV 30°、4:3 比例，是理解波導傳輸的最佳起點。</p>
-        <div class="mod-meta"><span>Module 01 · Basics</span><span class="arrow">啟動 →</span></div>
+        <h4>In-coupler 3D 光線追跡</h4>
+        <p>單一入射光柵與全反射 (TIR) 的 3D 示範。FOV 30°、4:3 比例，是理解波導傳輸的最佳起點。</p>
+        <div class="mod-meta"><span>Module 02 · Basics</span><span class="arrow">啟動 →</span></div>
       </div>
     </a>
     <a href="raytrace-3gratings.html" class="mod-card" target="_blank">
@@ -212,7 +222,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
       <div class="mod-body">
         <h4>3 道光柵完整路徑</h4>
         <p>G1 in-coupler + G2 EPE + G3 out-coupler 的完整 3D 光線追跡，看見 2D 擴瞳的實際幾何行為。</p>
-        <div class="mod-meta"><span>Module 02 · Full Path</span><span class="arrow">啟動 →</span></div>
+        <div class="mod-meta"><span>Module 03 · Full Path</span><span class="arrow">啟動 →</span></div>
       </div>
     </a>
     <a href="simulator.html" class="mod-card" target="_blank">
@@ -222,7 +232,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
       <div class="mod-body">
         <h4>完整模擬器（Eyebox + Efficiency）</h4>
         <p>含 5-zone G2 效率調整、9 宮格 Eyebox 均勻度 heatmap、論文式 BTM 角度均勻度分析。</p>
-        <div class="mod-meta"><span>Module 03 · Flagship</span><span class="arrow">啟動 →</span></div>
+        <div class="mod-meta"><span>Module 04 · Flagship</span><span class="arrow">啟動 →</span></div>
       </div>
     </a>
   </div>
@@ -242,7 +252,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
       <div class="mod-body">
         <h4>單一光柵 K-space</h4>
         <p>9 個 FOV 點 × 4 mm 光束在 In-coupler 上的 k-space 分布：哪些方向能被耦合進 TIR？</p>
-        <div class="mod-meta"><span>Module 04 · 1 Grating</span><span class="arrow">啟動 →</span></div>
+        <div class="mod-meta"><span>Module 05 · 1 Grating</span><span class="arrow">啟動 →</span></div>
       </div>
     </a>
     <a href="kspace-2gratings.html" class="mod-card" target="_blank">
@@ -252,7 +262,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
       <div class="mod-body">
         <h4>雙光柵 K-space (G1 + G2)</h4>
         <p>加入 G2 EPE 後的 k-space：每個 FOV 點的 m=0,+1 階繞射如何沿著光柵向量平移。</p>
-        <div class="mod-meta"><span>Module 05 · 2 Gratings</span><span class="arrow">啟動 →</span></div>
+        <div class="mod-meta"><span>Module 06 · 2 Gratings</span><span class="arrow">啟動 →</span></div>
       </div>
     </a>
     <a href="kspace-3gratings.html" class="mod-card" target="_blank">
@@ -262,7 +272,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
       <div class="mod-body">
         <h4>三光柵 K-space (G1 + G2 + G3)</h4>
         <p>完整擴瞳系統的 k-space 演化：FOV 從入射 → EPE 平移 → out-coupler 還原到自由空間的全程。</p>
-        <div class="mod-meta"><span>Module 06 · 3 Gratings</span><span class="arrow">啟動 →</span></div>
+        <div class="mod-meta"><span>Module 07 · 3 Gratings</span><span class="arrow">啟動 →</span></div>
       </div>
     </a>
   </div>
@@ -303,7 +313,7 @@ footer{position:relative;z-index:1;border-top:1px solid var(--line);margin-top:5
   </div>
   <div class="foot-bottom">
     AR Waveguide Visualization Suite · A teaching toolkit by Modern Nanophotonics Lab
-    <div class="built">6 interactive modules · vanilla JavaScript · Hosted on GitHub Pages</div>
+    <div class="built">7 interactive modules · vanilla JavaScript · Hosted on GitHub Pages</div>
   </div>
 </footer>
 
